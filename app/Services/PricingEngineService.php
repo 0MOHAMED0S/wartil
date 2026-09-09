@@ -16,7 +16,17 @@ class PricingEngineService
         if (!$student->country) {
             return 'foreign'; // Default fallback
         }
-        return $student->country->region ?? 'foreign';
+        
+        $region = $student->country->region;
+        if (empty($region)) {
+            $code = strtoupper($student->country->currency_code ?? '');
+            if ($code === 'EGP') return 'egypt';
+            $arabCurrencies = ['SAR', 'AED', 'QAR', 'KWD', 'JOD', 'OMR', 'BHD', 'LYD', 'DZD', 'MAD', 'TND', 'SDG', 'IQD', 'SYP', 'YER'];
+            if (in_array($code, $arabCurrencies)) return 'arab';
+            return 'foreign';
+        }
+        
+        return strtolower(trim($region));
     }
 
     /**

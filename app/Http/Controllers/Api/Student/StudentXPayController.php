@@ -48,7 +48,13 @@ class StudentXPayController extends Controller
                 elseif ($country->region === 'foreign') $basePrice = $package->foreign_price;
             }
 
-            $convertedPrice = (float) $basePrice * $rate;
+            $allowedCurrencies = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'QAR', 'KWD', 'JOD', 'OMR', 'BHD', 'LYD', 'AUD', 'CAD', 'CNY'];
+            if (!in_array(strtoupper($currency), $allowedCurrencies)) {
+                $currency = 'EGP';
+                $convertedPrice = (float) $basePrice; // Revert to base price which is in EGP
+            } else {
+                $convertedPrice = (float) $basePrice * $rate;
+            }
             $discountAmount = 0;
             $couponId = null;
             $couponCode = $request->input('coupon');
