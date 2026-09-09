@@ -89,7 +89,7 @@ class PackageController extends Controller
             }
 
             \Illuminate\Support\Facades\Log::info('Package Update Data', ['id' => $package->id, 'data' => $data]);
-            $package->update($data);
+            $package->forceFill($data)->save();
 
             return redirect()
                 ->route('packages.index')
