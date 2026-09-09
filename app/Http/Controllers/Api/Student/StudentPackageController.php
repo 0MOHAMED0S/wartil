@@ -36,13 +36,13 @@ class StudentPackageController extends Controller
                 ->value('package_id');
 
             $perPage = $request->query('per_page', 10);
-            $region = $country->region ?? 'foreign'; // fallback just in case
+            $pricingService = app(PricingEngineService::class);
+            $region = $pricingService->getStudentRegion($studentProfile);
             
             $packages = Package::where('status', 'active')
                 ->where('show_in_' . $region, true)
                 ->paginate($perPage);
 
-            $pricingService = app(PricingEngineService::class);
             $packages->getCollection()->transform(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
 
                 $originalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);

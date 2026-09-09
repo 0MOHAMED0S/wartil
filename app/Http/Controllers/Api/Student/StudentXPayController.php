@@ -41,12 +41,8 @@ class StudentXPayController extends Controller
             $rate = ($country && $country->rate_to_usd > 0) ? (float) $country->rate_to_usd : 1;
             $currency = ($country && $country->currency_code) ? $country->currency_code : 'EGP';
 
-            $basePrice = $package->egypt_price; // Default
-            if ($country) {
-                if ($country->region === 'egypt') $basePrice = $package->egypt_price;
-                elseif ($country->region === 'arab') $basePrice = $package->arab_price;
-                elseif ($country->region === 'foreign') $basePrice = $package->foreign_price;
-            }
+            $pricingService = app(\App\Services\PricingEngineService::class);
+            $basePrice = $pricingService->getPackagePriceUsd($package, $user->studentProfile);
 
             $allowedCurrencies = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'QAR', 'KWD', 'JOD', 'OMR', 'BHD', 'LYD', 'AUD', 'CAD', 'CNY'];
             if (!in_array(strtoupper($currency), $allowedCurrencies)) {

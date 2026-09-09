@@ -34,18 +34,8 @@ class BuyPackageController extends Controller
             // 1. تحديد السعر والعملة (Local vs Default Logic)
             $country = $user->isStudent() ? $user->studentProfile?->country : ($user->isTeacher() ? $user->teacherProfile?->country : null);
 
-            // تحديد السعر الأساسي بناءً على تصنيف الدولة
-            $basePrice = $package->egypt_price; // افتراضي
-            
-            if ($country) {
-                if ($country->region === 'egypt') {
-                    $basePrice = $package->egypt_price;
-                } elseif ($country->region === 'arab') {
-                    $basePrice = $package->arab_price;
-                } elseif ($country->region === 'foreign') {
-                    $basePrice = $package->foreign_price;
-                }
-            }
+            $pricingService = app(\App\Services\PricingEngineService::class);
+            $basePrice = $pricingService->getPackagePriceUsd($package, $user->studentProfile);
 
             // إذا كانت الدولة مدعومة ولديها Integration ID خاص بها
             if ($country && !empty($country->paymob_integration_id)) {
