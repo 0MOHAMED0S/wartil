@@ -59,7 +59,7 @@
         .text-open { color: #198754; } .text-closed { color: #dc3545; }
 
         /* Professional Table Styles */
-        .table-responsive { display: block; width: 100%; max-width: 100%; overflow-x: auto; max-height: 65vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .table-responsive { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .professional-table { width: 100%; min-width: 1200px; border-collapse: separate; border-spacing: 0; background: #fff; }
         .professional-table thead th { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 2px solid #e2e8f0; }
         .professional-table th { font-weight: 700; color: #1e293b; font-size: 0.85rem; padding: 16px 12px; white-space: nowrap; text-align: center; border-left: 1px solid #f1f5f9; }
