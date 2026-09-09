@@ -45,12 +45,12 @@ class StudentPackageController extends Controller
             $pricingService = app(PricingEngineService::class);
             $packages->getCollection()->transform(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
 
-                $finalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
+                $originalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
                 $discountPercent = (float) ($package->discount ?? 0);
 
-                $originalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
-                    ? $finalPriceUsd / (1 - ($discountPercent / 100))
-                    : $finalPriceUsd;
+                $finalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
+                    ? $originalPriceUsd * (1 - ($discountPercent / 100))
+                    : $originalPriceUsd;
 
                 $localOriginalPrice = $originalPriceUsd * $rate;
                 $localFinalPrice = $finalPriceUsd * $rate;

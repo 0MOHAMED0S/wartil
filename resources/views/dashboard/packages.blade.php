@@ -307,16 +307,24 @@
                         {{-- Egypt --}}
                         <div class="d-flex flex-column flex-fill align-items-center">
                             <span class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">مصر</span>
-                            <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
-                                <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->egypt_price, 2, '.', ''), '0'), '.') }}</span>
-                                <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
-                            </div>
                             @if($package->discount > 0 && $package->discount < 100)
-                                @php $origEgypt = $package->egypt_price / (1 - ($package->discount / 100)); @endphp
-                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origEgypt, 1) }} ج.م</del>
+                                @php $finalEgypt = $package->egypt_price * (1 - ($package->discount / 100)); @endphp
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($finalEgypt, 2, '.', ''), '0'), '.') }}</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ rtrim(rtrim(number_format($package->egypt_price, 2, '.', ''), '0'), '.') }} ج.م</del>
                             @elseif($package->discount >= 100)
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">0</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
                                 <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">مجاناً</del>
                             @else
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->egypt_price, 2, '.', ''), '0'), '.') }}</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
                                 <div class="mt-1" style="height: 0.7rem;"></div> {{-- Spacer to align cards without discount --}}
                             @endif
                             <form action="{{ route('packages.update', $package->id) }}" method="POST" class="mt-2">
@@ -333,16 +341,24 @@
                         {{-- Arab --}}
                         <div class="d-flex flex-column flex-fill align-items-center">
                             <span class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">عرب</span>
-                            <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
-                                <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->arab_price, 2, '.', ''), '0'), '.') }}</span>
-                                <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
-                            </div>
                             @if($package->discount > 0 && $package->discount < 100)
-                                @php $origArab = $package->arab_price / (1 - ($package->discount / 100)); @endphp
-                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origArab, 1) }} ج.م</del>
+                                @php $finalArab = $package->arab_price * (1 - ($package->discount / 100)); @endphp
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($finalArab, 2, '.', ''), '0'), '.') }}</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ rtrim(rtrim(number_format($package->arab_price, 2, '.', ''), '0'), '.') }} ج.م</del>
                             @elseif($package->discount >= 100)
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">0</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
                                 <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">مجاناً</del>
                             @else
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->arab_price, 2, '.', ''), '0'), '.') }}</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
                                 <div class="mt-1" style="height: 0.7rem;"></div>
                             @endif
                             <form action="{{ route('packages.update', $package->id) }}" method="POST" class="mt-2">
@@ -359,16 +375,24 @@
                         {{-- Foreign --}}
                         <div class="d-flex flex-column flex-fill align-items-center">
                             <span class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">أجانب</span>
-                            <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
-                                <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->foreign_price, 2, '.', ''), '0'), '.') }}</span>
-                                <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
-                            </div>
                             @if($package->discount > 0 && $package->discount < 100)
-                                @php $origForeign = $package->foreign_price / (1 - ($package->discount / 100)); @endphp
-                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origForeign, 1) }} ج.م</del>
+                                @php $finalForeign = $package->foreign_price * (1 - ($package->discount / 100)); @endphp
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($finalForeign, 2, '.', ''), '0'), '.') }}</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ rtrim(rtrim(number_format($package->foreign_price, 2, '.', ''), '0'), '.') }} ج.م</del>
                             @elseif($package->discount >= 100)
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">0</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
                                 <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">مجاناً</del>
                             @else
+                                <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                    <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->foreign_price, 2, '.', ''), '0'), '.') }}</span>
+                                    <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                                </div>
                                 <div class="mt-1" style="height: 0.7rem;"></div>
                             @endif
                             <form action="{{ route('packages.update', $package->id) }}" method="POST" class="mt-2">
