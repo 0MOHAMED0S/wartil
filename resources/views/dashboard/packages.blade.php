@@ -311,9 +311,11 @@
                                 <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->egypt_price, 2, '.', ''), '0'), '.') }}</span>
                                 <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
                             </div>
-                            @if($package->discount > 0)
+                            @if($package->discount > 0 && $package->discount < 100)
                                 @php $origEgypt = $package->egypt_price / (1 - ($package->discount / 100)); @endphp
                                 <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origEgypt, 1) }} ج.م</del>
+                            @elseif($package->discount >= 100)
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">مجاناً</del>
                             @else
                                 <div class="mt-1" style="height: 0.7rem;"></div> {{-- Spacer to align cards without discount --}}
                             @endif
@@ -335,9 +337,11 @@
                                 <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->arab_price, 2, '.', ''), '0'), '.') }}</span>
                                 <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
                             </div>
-                            @if($package->discount > 0)
+                            @if($package->discount > 0 && $package->discount < 100)
                                 @php $origArab = $package->arab_price / (1 - ($package->discount / 100)); @endphp
                                 <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origArab, 1) }} ج.م</del>
+                            @elseif($package->discount >= 100)
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">مجاناً</del>
                             @else
                                 <div class="mt-1" style="height: 0.7rem;"></div>
                             @endif
@@ -359,9 +363,11 @@
                                 <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->foreign_price, 2, '.', ''), '0'), '.') }}</span>
                                 <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
                             </div>
-                            @if($package->discount > 0)
+                            @if($package->discount > 0 && $package->discount < 100)
                                 @php $origForeign = $package->foreign_price / (1 - ($package->discount / 100)); @endphp
                                 <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origForeign, 1) }} ج.م</del>
+                            @elseif($package->discount >= 100)
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">مجاناً</del>
                             @else
                                 <div class="mt-1" style="height: 0.7rem;"></div>
                             @endif
