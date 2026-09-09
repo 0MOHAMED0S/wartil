@@ -15,13 +15,13 @@ class TeacherApprovedMail extends Mailable
 
     public $user;
     public $password;
-    public $salary;
+    public $categoryName;
 
-    public function __construct(User $user, $password, $salary)
+    public function __construct(User $user, $password, $categoryName)
     {
         $this->user = $user;
         $this->password = $password;
-        $this->salary = $salary;
+        $this->categoryName = $categoryName;
     }
 
     public function envelope(): Envelope

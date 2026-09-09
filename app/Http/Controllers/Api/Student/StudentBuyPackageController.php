@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\UserPackage;
 use App\Services\PayTabsService;
+use App\Services\PricingEngineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -40,7 +41,8 @@ class StudentBuyPackageController extends Controller
             $rate = ($country && $country->rate_to_usd > 0) ? (float) $country->rate_to_usd : 1;
             $currency = ($country && $country->currency_code) ? $country->currency_code : config('paytabs.currency', 'EGP');
 
-            $packageFinalPriceUsd = (float) $package->price;
+            $studentProfile = $user->studentProfile ?? clone $user->student;
+            $packageFinalPriceUsd = app(PricingEngineService::class)->getPackagePriceUsd($package, $studentProfile);
             $convertedPrice = $packageFinalPriceUsd * $rate;
             $discountAmount = 0;
             $couponId = null;

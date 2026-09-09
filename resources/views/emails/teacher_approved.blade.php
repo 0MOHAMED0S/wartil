@@ -62,7 +62,7 @@
             </div>
             <div class="email-body">
                 <h1>أهلاً بك يا {{ $user->name }}! 🎉</h1>
-                <p>يسعدنا إبلاغك بأنه قد تم قبول طلب انضمامك إلى فريق معلمي منصة ورتل.<br>لقد تم إنشاء حسابك بنجاح، وفيما يلي بيانات الدخول الخاصة بك وتفاصيل الراتب المتفق عليه.</p>
+                <p>يسعدنا إبلاغك بأنه قد تم قبول طلب انضمامك إلى فريق معلمي منصة ورتل.<br>لقد تم إنشاء حسابك بنجاح، وفيما يلي بيانات الدخول الخاصة بك وتفاصيل الفئة التي تم تعيينك بها.</p>
 
                 <div class="info-box">
                     <div class="info-item">
@@ -74,8 +74,8 @@
                         <span class="value">{{ $password }}</span>
                     </div>
                     <div class="info-item">
-                        <span class="label">💰 راتب الساعة</span>
-                        <span class="value salary-val">{{ $salary }} $</span>
+                        <span class="label">⭐ الفئة التعليمية</span>
+                        <span class="value salary-val">{{ $categoryName }}</span>
                     </div>
                 </div>
 

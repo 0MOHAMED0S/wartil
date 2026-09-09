@@ -33,8 +33,14 @@ class GiftController extends Controller
             $rate = ($country && $country->rate_to_usd > 0) ? (float) $country->rate_to_usd : 1;
             $currency = ($country && $country->currency_code) ? $country->currency_code : 'EGP';
 
-            $packageFinalPriceUsd = (float) $package->price;
-            $price = $packageFinalPriceUsd * $rate;
+            $basePrice = $package->egypt_price; // Default
+            if ($country) {
+                if ($country->region === 'egypt') $basePrice = $package->egypt_price;
+                elseif ($country->region === 'arab') $basePrice = $package->arab_price;
+                elseif ($country->region === 'foreign') $basePrice = $package->foreign_price;
+            }
+
+            $price = (float) $basePrice * $rate;
 
             return DB::transaction(function () use ($user, $package, $price, $currency, $request, $xpayService, $country) {
                 $giftCard = GiftCard::create([

@@ -34,18 +34,31 @@ class BuyPackageController extends Controller
             // 1. تحديد السعر والعملة (Local vs Default Logic)
             $country = $user->isStudent() ? $user->studentProfile?->country : ($user->isTeacher() ? $user->teacherProfile?->country : null);
 
+            // تحديد السعر الأساسي بناءً على تصنيف الدولة
+            $basePrice = $package->egypt_price; // افتراضي
+            
+            if ($country) {
+                if ($country->region === 'egypt') {
+                    $basePrice = $package->egypt_price;
+                } elseif ($country->region === 'arab') {
+                    $basePrice = $package->arab_price;
+                } elseif ($country->region === 'foreign') {
+                    $basePrice = $package->foreign_price;
+                }
+            }
+
             // إذا كانت الدولة مدعومة ولديها Integration ID خاص بها
             if ($country && !empty($country->paymob_integration_id)) {
                 $integrationId = $country->paymob_integration_id;
                 $currency = $country->currency_code;
                 $rate = ($country->rate_to_usd > 0) ? $country->rate_to_usd : 1;
-                $price = $package->price * $rate;
+                $price = $basePrice * $rate;
             }
             // الحالة الافتراضية: استخدام قيم ملف الـ .env
             else {
                 $integrationId = env('PAYMOB_INTEGRATION_ID');
                 $currency = env('PAYMOB_DEFAULT_CURRENCY', 'EGP');
-                $price = $package->price; // السعر الأساسي بدون تحويل
+                $price = $basePrice; 
             }
 
             // 2. منطق كود الخصم (Coupon Logic)

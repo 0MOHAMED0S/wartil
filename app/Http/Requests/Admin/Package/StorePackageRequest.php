@@ -29,11 +29,25 @@ class StorePackageRequest extends FormRequest
                 'unique:packages,name',
             ],
 
-            'price' => [
+            'egypt_price' => [
                 'required',
                 'numeric',
-                'min:50',
+                'min:0',
             ],
+            'arab_price' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+            'foreign_price' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'show_in_egypt' => ['boolean'],
+            'show_in_arab' => ['boolean'],
+            'show_in_foreign' => ['boolean'],
 
             'discount' => [
                 'nullable',
@@ -74,9 +88,12 @@ class StorePackageRequest extends FormRequest
             'name.unique' => 'اسم الباقة مستخدم بالفعل',
             'name.max' => 'اسم الباقة يجب ألا يتجاوز 255 حرفًا',
 
-            'price.required' => 'سعر الباقة مطلوب',
-            'price.numeric' => 'سعر الباقة يجب أن يكون رقمًا صحيحًا',
-            'price.min' => 'سعر الباقة يجب ألا يقل عن 50 ج.م',
+            'egypt_price.required' => 'سعر الباقة في مصر مطلوب',
+            'egypt_price.numeric' => 'سعر الباقة في مصر يجب أن يكون رقمًا',
+            'arab_price.required' => 'سعر الباقة في الدول العربية مطلوب',
+            'arab_price.numeric' => 'سعر الباقة في الدول العربية يجب أن يكون رقمًا',
+            'foreign_price.required' => 'سعر الباقة في الدول الأجنبية مطلوب',
+            'foreign_price.numeric' => 'سعر الباقة في الدول الأجنبية يجب أن يكون رقمًا',
 
             'discount.integer' => 'نسبة الخصم يجب أن تكون رقمًا صحيحًا',
             'discount.max' => 'نسبة الخصم لا يمكن أن تتجاوز 100%',

@@ -534,6 +534,11 @@
         <div>
             <h5 class="m-0 fw-bold fs-5">إدارة الطلاب</h5>
         </div>
+        <div>
+            <a href="{{ route('admin.students.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
+                <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
+            </a>
+        </div>
     </div>
 @endsection
 

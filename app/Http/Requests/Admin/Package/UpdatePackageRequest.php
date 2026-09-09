@@ -32,12 +32,28 @@ class UpdatePackageRequest extends FormRequest
             /* =======================
                Price
             ======================== */
-            'price' => [
+            'egypt_price' => [
                 'sometimes',
                 'required',
                 'numeric',
-                'min:50',
+                'min:0',
             ],
+            'arab_price' => [
+                'sometimes',
+                'required',
+                'numeric',
+                'min:0',
+            ],
+            'foreign_price' => [
+                'sometimes',
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'show_in_egypt' => ['sometimes', 'boolean'],
+            'show_in_arab' => ['sometimes', 'boolean'],
+            'show_in_foreign' => ['sometimes', 'boolean'],
 
             /* =======================
                Discount
@@ -106,9 +122,12 @@ class UpdatePackageRequest extends FormRequest
             'name.required' => 'يرجى إدخال اسم الباقة.',
             'name.unique'   => 'اسم الباقة مستخدم مسبقًا.',
 
-            'price.required' => 'يرجى إدخال سعر الباقة.',
-            'price.numeric'  => 'السعر يجب أن يكون رقمًا صحيحًا.',
-            'price.min'      => 'سعر الباقة يجب ألا يقل عن 50 ج.م.',
+            'egypt_price.required' => 'سعر الباقة في مصر مطلوب',
+            'egypt_price.numeric' => 'سعر الباقة في مصر يجب أن يكون رقمًا',
+            'arab_price.required' => 'سعر الباقة في الدول العربية مطلوب',
+            'arab_price.numeric' => 'سعر الباقة في الدول العربية يجب أن يكون رقمًا',
+            'foreign_price.required' => 'سعر الباقة في الدول الأجنبية مطلوب',
+            'foreign_price.numeric' => 'سعر الباقة في الدول الأجنبية يجب أن يكون رقمًا',
 
             'discount.integer' => 'نسبة الخصم يجب أن تكون رقمًا صحيحًا.',
             'discount.max'     => 'نسبة الخصم لا يمكن أن تتجاوز 100٪.',

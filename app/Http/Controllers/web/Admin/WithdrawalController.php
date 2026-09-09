@@ -56,14 +56,8 @@ class WithdrawalController extends Controller
                 $message = 'تمت الموافقة على الطلب بنجاح.';
 
             } elseif ($validated['status'] === 'rejected') {
-                // في حالة الرفض: يجب إرجاع الرصيد (الدقائق) للمعلم
-                $teacher = $withdrawal->teacher;
-                $hourlyRate = $teacher->salary ?? 0;
-
-                if ($hourlyRate > 0) {
-                    $minutesToRefund = ($withdrawal->amount / $hourlyRate) * 60;
-                    $teacher->increment('minutes', $minutesToRefund);
-                }
+                // في حالة الرفض: يجب إرجاع الرصيد המالي للمعلم
+                $withdrawal->teacher->increment('balance', $withdrawal->amount);
 
                 $withdrawal->update(['status' => 'rejected']);
                 $message = 'تم رفض الطلب وإرجاع الرصيد لمحفظة المعلم.';

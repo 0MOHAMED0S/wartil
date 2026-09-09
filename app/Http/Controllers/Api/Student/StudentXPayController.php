@@ -41,8 +41,14 @@ class StudentXPayController extends Controller
             $rate = ($country && $country->rate_to_usd > 0) ? (float) $country->rate_to_usd : 1;
             $currency = ($country && $country->currency_code) ? $country->currency_code : 'EGP';
 
-            $packageFinalPriceUsd = (float) $package->price;
-            $convertedPrice = $packageFinalPriceUsd * $rate;
+            $basePrice = $package->egypt_price; // Default
+            if ($country) {
+                if ($country->region === 'egypt') $basePrice = $package->egypt_price;
+                elseif ($country->region === 'arab') $basePrice = $package->arab_price;
+                elseif ($country->region === 'foreign') $basePrice = $package->foreign_price;
+            }
+
+            $convertedPrice = (float) $basePrice * $rate;
             $discountAmount = 0;
             $couponId = null;
             $couponCode = $request->input('coupon');

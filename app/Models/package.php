@@ -8,7 +8,12 @@ class Package extends Model
 {
     protected $fillable = [
         'name',
-        'price',
+        'egypt_price',
+        'arab_price',
+        'foreign_price',
+        'show_in_egypt',
+        'show_in_arab',
+        'show_in_foreign',
         'discount',
         'base_minutes',
         'bonus_minutes',

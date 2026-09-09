@@ -80,6 +80,7 @@ Route::prefix('teacher')->middleware('throttle:60,1')->group(function () {
         // محفظة المعلم
         Route::prefix('wallet')->group(function () {
             Route::get('/', [TeacherWalletController::class, 'getWallet']);
+            Route::get('/earnings-report', [TeacherWalletController::class, 'earningsReport']);
             Route::post('/withdraw', [TeacherWalletController::class, 'requestWithdrawal']);
             Route::get('/requests', [TeacherWalletController::class, 'getAllRequests']);
             Route::delete('/requests/{id}/cancel', [TeacherWalletController::class, 'cancelRequest']);

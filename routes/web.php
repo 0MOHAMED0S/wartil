@@ -32,7 +32,9 @@ Route::get('/close', function () {
 })->name('close.index');
 
 Route::get('/msa', function () {
-    return view('dashboard.teachers');
+    return view('dashboard.teachers', [
+        'teachers' => \App\Models\Teacher_application::paginate(10)
+    ]);
 });
 Route::get('/teacher', [TeacherApplicationController::class, 'index'])->name('teacher.index');
 Route::get('/', [MainController::class, 'index'])->name('welcome');
@@ -86,6 +88,10 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/withdrawals', [WithdrawalController::class, 'index'])->name('admin.withdrawals.index');
         Route::put('/withdrawals/{id}/status', [WithdrawalController::class, 'updateStatus'])->name('admin.withdrawals.update_status');
+
+        Route::resource('teacher-categories', \App\Http\Controllers\web\Admin\TeacherCategoryController::class)->except(['create', 'show', 'edit']);
+        Route::get('/teachers-export', [TeacherController::class, 'exportCsv'])->name('admin.teachers.export');
+        Route::get('/students-export', [StudentsController::class, 'exportCsv'])->name('admin.students.export');
     });
 });
 

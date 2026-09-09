@@ -13,6 +13,11 @@ class Teacher extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function category()
+    {
+        return $this->belongsTo(TeacherCategory::class, 'category_id');
+    }
     public function slots()
     {
         return $this->hasMany(TeacherSlot::class);

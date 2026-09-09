@@ -42,9 +42,13 @@ class PackageController extends Controller
     public function store(StorePackageRequest $request)
     {
         try {
-            Package::create(
-                $request->validated() + ['status' => 'active']
-            );
+            $data = $request->validated();
+            $data['show_in_egypt'] = $request->has('show_in_egypt');
+            $data['show_in_arab'] = $request->has('show_in_arab');
+            $data['show_in_foreign'] = $request->has('show_in_foreign');
+            $data['status'] = 'active';
+
+            Package::create($data);
 
             return redirect()
                 ->route('packages.index')
@@ -64,7 +68,27 @@ class PackageController extends Controller
     public function update(UpdatePackageRequest $request, Package $package)
     {
         try {
-            $package->update($request->validated());
+            $data = $request->validated();
+            
+            // Only update checkboxes if this is a full form submission
+            if ($request->has('is_full_update')) {
+                $data['show_in_egypt'] = $request->has('show_in_egypt');
+                $data['show_in_arab'] = $request->has('show_in_arab');
+                $data['show_in_foreign'] = $request->has('show_in_foreign');
+            } else {
+                // Handle individual toggles
+                if ($request->has('toggle_show_in_egypt')) {
+                    $data['show_in_egypt'] = $request->has('show_in_egypt');
+                }
+                if ($request->has('toggle_show_in_arab')) {
+                    $data['show_in_arab'] = $request->has('show_in_arab');
+                }
+                if ($request->has('toggle_show_in_foreign')) {
+                    $data['show_in_foreign'] = $request->has('show_in_foreign');
+                }
+            }
+
+            $package->update($data);
 
             return redirect()
                 ->route('packages.index')

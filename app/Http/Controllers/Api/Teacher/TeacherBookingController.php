@@ -351,15 +351,30 @@ public function endBookedSession(Request $request)
                 }
             }
 
+            $studentRegion = null;
+            $teacherEarnings = 0;
+
+            $slot->teacher->increment('minutes', $booking->deducted_minutes);
+            $student = \App\Models\Student::where('user_id', $booking->user_id)->first();
+            if ($student) {
+                $earningsData = app(\App\Services\PricingEngineService::class)->processSessionEarnings(
+                    $slot->teacher,
+                    $student,
+                    $booking->deducted_minutes
+                );
+                $studentRegion = $earningsData['region'];
+                $teacherEarnings = $earningsData['earnings'];
+            }
+            \Illuminate\Support\Facades\Log::info("Session ended: {$booking->deducted_minutes} minutes added to teacher {$slot->teacher_id}");
+
             $booking->update([
                 'ended_at' => $now,
                 'actual_duration' => $actualDuration,
                 'status' => 'completed',
-                'recording_url' => $recordingUrl
+                'recording_url' => $recordingUrl,
+                'student_region' => $studentRegion,
+                'teacher_earnings' => $teacherEarnings,
             ]);
-
-            $slot->teacher->increment('minutes', $booking->deducted_minutes);
-            \Illuminate\Support\Facades\Log::info("Session ended: {$booking->deducted_minutes} minutes added to teacher {$slot->teacher_id}");
 
             \Illuminate\Support\Facades\DB::commit();
 

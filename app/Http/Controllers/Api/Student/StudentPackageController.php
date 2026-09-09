@@ -9,6 +9,7 @@ use App\Models\Package;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use App\Services\PricingEngineService;
 
 class StudentPackageController extends Controller
 {
@@ -35,11 +36,16 @@ class StudentPackageController extends Controller
                 ->value('package_id');
 
             $perPage = $request->query('per_page', 10);
-            $packages = Package::where('status', 'active')->paginate($perPage);
+            $region = $country->region ?? 'foreign'; // fallback just in case
+            
+            $packages = Package::where('status', 'active')
+                ->where('show_in_' . $region, true)
+                ->paginate($perPage);
 
-            $packages->getCollection()->transform(function ($package) use ($country, $rate, $bestSellerPackageId) {
+            $pricingService = app(PricingEngineService::class);
+            $packages->getCollection()->transform(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
 
-                $finalPriceUsd = (float) $package->price;
+                $finalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
                 $discountPercent = (float) ($package->discount ?? 0);
 
                 $originalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
@@ -122,10 +128,13 @@ class StudentPackageController extends Controller
             $perPage = $request->query('per_page', 10);
             $paginatedPackages = $query->paginate($perPage);
 
-            $paginatedPackages->getCollection()->transform(function ($userPackage) use ($country, $rate) {
+            $studentProfile = $user->studentProfile ?? clone $user->student; // Just to be safe
+            $pricingService = app(PricingEngineService::class);
+
+            $paginatedPackages->getCollection()->transform(function ($userPackage) use ($country, $rate, $pricingService, $studentProfile) {
                 $package = $userPackage->package;
 
-                $finalPriceUsd = (float) $package->price;
+                $finalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
                 $discountPercent = (float) ($package->discount ?? 0);
 
                 $originalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
@@ -210,7 +219,7 @@ class StudentPackageController extends Controller
                     'message' => 'الباقة غير موجودة.'
                 ], 404);
             }
-            $packageFinalPriceUsd = $package->price;
+            $packageFinalPriceUsd = app(PricingEngineService::class)->getPackagePriceUsd($package, $user->studentProfile ?? $user->student);
             $rate = $user->country?->rate_to_usd ?? 1;
             $convertedPrice = $packageFinalPriceUsd * $rate;
 

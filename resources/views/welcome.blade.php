@@ -1812,7 +1812,25 @@
                     @php
                         $hasDiscount = $package->discount > 0;
                         $isVip = str_contains(strtolower($package->name), 'vip');
-                        $finalPrice = $package->price;
+                        $finalPrice = $package->egypt_price; // Default
+                        $currencyCode = 'EGP';
+                        if(auth()->check() && auth()->user()->isStudent()) {
+                            $studentProfile = auth()->user()->studentProfile;
+                            $country = $studentProfile?->country;
+                            $userRegion = $country?->region ?? 'foreign';
+                            
+                            // Check visibility
+                            $showProp = 'show_in_' . $userRegion;
+                            if (!$package->$showProp) {
+                                continue;
+                            }
+
+                            $pricingService = app(\App\Services\PricingEngineService::class);
+                            $finalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile ?? auth()->user()->student);
+                            $rate = $country?->rate_to_usd ?? 1;
+                            $finalPrice = $finalPriceUsd * $rate;
+                            $currencyCode = $country?->currency_code ?? 'EGP';
+                        }
                         $originalPrice = $hasDiscount ? $finalPrice / (1 - $package->discount / 100) : $finalPrice;
                     @endphp
 
@@ -1855,10 +1873,10 @@
                             <div class="pkg-bottom">
                                 <div class="price-box">
                                     @if ($hasDiscount)
-                                        <span class="price-old">{{ number_format($originalPrice, 2) }} EGP</span>
+                                        <span class="price-old">{{ number_format($originalPrice, 2) }} {{ $currencyCode }}</span>
                                     @endif
                                     <div class="price-current">
-                                        <span class="amount">{{ number_format($finalPrice, 2) }} <span class="font-size:14px">EGP</span></span>
+                                        <span class="amount">{{ number_format($finalPrice, 2) }} <span class="font-size:14px">{{ $currencyCode }}</span></span>
                                     </div>
                                 </div>
 

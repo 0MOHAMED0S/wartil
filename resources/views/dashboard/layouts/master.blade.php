@@ -348,6 +348,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('teacher-categories.index') }}"
+                        class="sidebar-link {{ Str::startsWith(Route::currentRouteName(), 'teacher-categories.') ? 'active' : '' }}">
+                        <i class="fa-solid fa-layer-group"></i> فئات المعلمين
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('tracks.index') }}"
                         class="sidebar-link {{ Str::startsWith(Route::currentRouteName(), 'tracks.') ? 'active' : '' }}">
                         <i class="fa-solid fa-layer-group"></i> المسارات

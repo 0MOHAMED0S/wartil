@@ -232,6 +232,9 @@ class PrivateCallController extends Controller
         try {
             $actualDeduction = 0;
 
+            $studentRegion = null;
+            $teacherEarnings = 0;
+
             if ($durationMinutes > 0) {
                 $activePackages = $this->getActivePackages($call->student_id, true);
                 $totalAvailableMinutes = $activePackages->sum('remaining_minutes');
@@ -255,6 +258,16 @@ class PrivateCallController extends Controller
                 $teacher = Teacher::find($call->teacher_id);
                 if ($teacher) {
                     $teacher->increment('minutes', $actualDeduction);
+                    $student = \App\Models\Student::where('user_id', $call->student_id)->first();
+                    if ($student) {
+                        $earningsData = app(\App\Services\PricingEngineService::class)->processSessionEarnings(
+                            $teacher,
+                            $student,
+                            $actualDeduction
+                        );
+                        $studentRegion = $earningsData['region'];
+                        $teacherEarnings = $earningsData['earnings'];
+                    }
                 }
             }
 
@@ -262,7 +275,9 @@ class PrivateCallController extends Controller
                 'ended_at'         => $now,
                 'duration_minutes' => $actualDeduction,
                 'status'           => 'ended',
-                'recording_url'    => $recordingUrl
+                'recording_url'    => $recordingUrl,
+                'student_region'   => $studentRegion,
+                'teacher_earnings' => $teacherEarnings,
             ]);
 
             DB::commit();

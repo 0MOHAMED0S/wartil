@@ -23,10 +23,9 @@ class ApproveTeacherRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'salary' => [
+            'category_id' => [
                 'required',
-                'numeric',
-                'min:0',
+                'exists:teacher_categories,id',
             ],
 
             'password' => [
@@ -54,9 +53,8 @@ class ApproveTeacherRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'salary.required' => 'الراتب مطلوب',
-            'salary.numeric' => 'الراتب يجب أن يكون رقمًا',
-            'salary.min' => 'الراتب لا يمكن أن يكون أقل من صفر',
+            'category_id.required' => 'تحديد الفئة مطلوب',
+            'category_id.exists' => 'الفئة المحددة غير موجودة',
 
             'password.required' => 'كلمة المرور مطلوبة',
             'password.min' => 'كلمة المرور يجب ألا تقل عن 8 أحرف',

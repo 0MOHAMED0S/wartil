@@ -24,8 +24,8 @@ class TeacherWalletController extends Controller
             }
 
             $totalMinutes   = $teacher->minutes ?? 0;
-            $hourlyRate     = $teacher->salary ?? 0;
-            $currentBalance = ($totalMinutes / 60) * $hourlyRate;
+            $hourlyRate     = $teacher->category ? $teacher->category->egypt_rate : ($teacher->salary ?? 0);
+            $currentBalance = $teacher->balance ?? 0;
 
             // جلب آخر 5 طلبات للعرض السريع في المحفظة
             $recentWithdrawals = WithdrawalRequest::where('teacher_id', $teacher->id)
@@ -130,13 +130,8 @@ public function requestWithdrawal(Request $request)
         }
 
         $totalMinutes   = $teacher->minutes ?? 0;
-        $hourlyRate     = $teacher->salary ?? 0;
-
-        if ($hourlyRate <= 0) {
-            return response()->json(['status' => false, 'message' => 'لم يتم تحديد سعر الساعة الخاص بك بعد.'], 400);
-        }
-
-        $currentBalance = ($totalMinutes / 60) * $hourlyRate;
+        $hourlyRate     = $teacher->category ? $teacher->category->egypt_rate : ($teacher->salary ?? 0);
+        $currentBalance = $teacher->balance ?? 0;
 
         if (round($currentBalance, 2) < $validated['amount']) {
             return response()->json([
@@ -148,8 +143,7 @@ public function requestWithdrawal(Request $request)
 
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
-            $minutesToDeduct = ($validated['amount'] / $hourlyRate) * 60;
-            $teacher->decrement('minutes', $minutesToDeduct);
+            $teacher->decrement('balance', $validated['amount']);
 
             $withdrawal = \App\Models\WithdrawalRequest::create([
                 'teacher_id'     => $teacher->id,
@@ -192,8 +186,7 @@ public function requestWithdrawal(Request $request)
             }
             // ==========================================
 
-            $remainingMinutes = $teacher->fresh()->minutes;
-            $remainingBalance = ($remainingMinutes / 60) * $hourlyRate;
+            $remainingBalance = $teacher->fresh()->balance ?? 0;
 
             return response()->json([
                 'status'  => true,
@@ -236,12 +229,9 @@ public function requestWithdrawal(Request $request)
 
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
-            $hourlyRate = $teacher->salary ?? 0;
-            $minutesToRefund = ($withdrawal->amount / $hourlyRate) * 60;
-
             $withdrawnAmount = $withdrawal->amount; // حفظ القيمة قبل الحذف للإشعار
 
-            $teacher->increment('minutes', $minutesToRefund);
+            $teacher->increment('balance', $withdrawnAmount);
             $withdrawal->delete();
 
             \Illuminate\Support\Facades\DB::commit();
@@ -276,8 +266,7 @@ public function requestWithdrawal(Request $request)
             }
             // ==========================================
 
-            $newMinutes = $teacher->fresh()->minutes;
-            $newBalance = ($newMinutes / 60) * $hourlyRate;
+            $newBalance = $teacher->fresh()->balance ?? 0;
 
             return response()->json([
                 'status'  => true,
@@ -295,4 +284,79 @@ public function requestWithdrawal(Request $request)
         }
     }
 
+    /**
+     * تقرير مفصل لأرباح المعلم حسب منطقة الطلاب (مصر، عرب، أجانب)
+     */
+    public function earningsReport(Request $request)
+    {
+        try {
+            $teacher = Teacher::where('user_id', auth()->id())->first();
+
+            if (!$teacher) {
+                return response()->json(['status' => false, 'message' => 'بيانات المعلم غير موجودة.'], 404);
+            }
+
+            // Report logic: Aggregate from call_sessions
+            $callSessions = \App\Models\CallSession::where('teacher_id', $teacher->id)
+                ->where('status', 'ended')
+                ->select(
+                    DB::raw('COALESCE(student_region, "foreign") as region'),
+                    DB::raw('SUM(duration_minutes) as total_minutes'),
+                    DB::raw('SUM(teacher_earnings) as total_earnings')
+                )
+                ->groupBy('region')
+                ->get();
+
+            // Report logic: Aggregate from slot_bookings
+            // Note: slot_bookings belongs to teacher_slot_id, we need to join teacher_slots
+            $slotBookings = DB::table('slot_bookings')
+                ->join('teacher_slots', 'slot_bookings.teacher_slot_id', '=', 'teacher_slots.id')
+                ->where('teacher_slots.teacher_id', $teacher->id)
+                ->where('slot_bookings.status', 'completed')
+                ->select(
+                    DB::raw('COALESCE(slot_bookings.student_region, "foreign") as region'),
+                    DB::raw('SUM(slot_bookings.actual_duration) as total_minutes'),
+                    DB::raw('SUM(slot_bookings.teacher_earnings) as total_earnings')
+                )
+                ->groupBy('region')
+                ->get();
+
+            // Merge and calculate totals
+            $report = [
+                'egypt' => ['total_minutes' => 0, 'total_earnings' => 0.0],
+                'arab' => ['total_minutes' => 0, 'total_earnings' => 0.0],
+                'foreign' => ['total_minutes' => 0, 'total_earnings' => 0.0],
+            ];
+
+            foreach ($callSessions as $session) {
+                $region = $session->region;
+                if (!isset($report[$region])) $region = 'foreign';
+                $report[$region]['total_minutes'] += (int) $session->total_minutes;
+                $report[$region]['total_earnings'] += (float) $session->total_earnings;
+            }
+
+            foreach ($slotBookings as $booking) {
+                $region = $booking->region;
+                if (!isset($report[$region])) $region = 'foreign';
+                $report[$region]['total_minutes'] += (int) $booking->total_minutes;
+                $report[$region]['total_earnings'] += (float) $booking->total_earnings;
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم استرجاع تقرير الأرباح بنجاح.',
+                'data' => [
+                    'report' => $report,
+                    'grand_total_minutes' => array_sum(array_column($report, 'total_minutes')),
+                    'grand_total_earnings' => array_sum(array_column($report, 'total_earnings')),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Teacher Earnings Report Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ غير متوقع أثناء تحميل التقرير.'
+            ], 500);
+        }
+    }
 }

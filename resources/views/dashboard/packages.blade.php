@@ -300,16 +300,80 @@
                     <div class="discount-ribbon" style="overflow: hidden">خصم {{ $package->discount }}%</div>
                 @endif
 
-                <div class="pkg-header">
-                    <h5 class="pkg-title {{ $package->discount > 0 ? 'text-warning' : '' }}">{{ $package->name }}</h5>
-                    <div class="pkg-price-box">
-                        <span class="pkg-currency">ج.م</span>
-                        <span class="pkg-price">{{ $package->price }}</span>
+                <div class="pkg-header pb-3">
+                    <h5 class="pkg-title {{ $package->discount > 0 ? 'text-warning' : '' }} mb-4">{{ $package->name }}</h5>
+                    
+                    <div class="d-flex justify-content-between text-center px-2">
+                        {{-- Egypt --}}
+                        <div class="d-flex flex-column flex-fill align-items-center">
+                            <span class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">مصر</span>
+                            <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->egypt_price, 2, '.', ''), '0'), '.') }}</span>
+                                <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                            </div>
+                            @if($package->discount > 0)
+                                @php $origEgypt = $package->egypt_price / (1 - ($package->discount / 100)); @endphp
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origEgypt, 1) }} ج.م</del>
+                            @else
+                                <div class="mt-1" style="height: 0.7rem;"></div> {{-- Spacer to align cards without discount --}}
+                            @endif
+                            <form action="{{ route('packages.update', $package->id) }}" method="POST" class="mt-2">
+                                @csrf @method('PUT')
+                                <input type="hidden" name="toggle_show_in_egypt" value="1">
+                                <div class="form-check form-switch m-0 p-0" title="إظهار/إخفاء في مصر" style="min-height: auto; width: 30px;">
+                                    <input class="form-check-input m-0 cursor-pointer" type="checkbox" name="show_in_egypt" value="1" onchange="this.form.submit()" {{ $package->show_in_egypt ? 'checked' : '' }} style="width: 2rem; height: 1rem;">
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="border-end mx-1"></div>
+
+                        {{-- Arab --}}
+                        <div class="d-flex flex-column flex-fill align-items-center">
+                            <span class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">عرب</span>
+                            <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->arab_price, 2, '.', ''), '0'), '.') }}</span>
+                                <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                            </div>
+                            @if($package->discount > 0)
+                                @php $origArab = $package->arab_price / (1 - ($package->discount / 100)); @endphp
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origArab, 1) }} ج.م</del>
+                            @else
+                                <div class="mt-1" style="height: 0.7rem;"></div>
+                            @endif
+                            <form action="{{ route('packages.update', $package->id) }}" method="POST" class="mt-2">
+                                @csrf @method('PUT')
+                                <input type="hidden" name="toggle_show_in_arab" value="1">
+                                <div class="form-check form-switch m-0 p-0" title="إظهار/إخفاء في الدول العربية" style="min-height: auto; width: 30px;">
+                                    <input class="form-check-input m-0 cursor-pointer" type="checkbox" name="show_in_arab" value="1" onchange="this.form.submit()" {{ $package->show_in_arab ? 'checked' : '' }} style="width: 2rem; height: 1rem;">
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="border-end mx-1"></div>
+
+                        {{-- Foreign --}}
+                        <div class="d-flex flex-column flex-fill align-items-center">
+                            <span class="text-muted mb-1 fw-bold" style="font-size: 0.75rem;">أجانب</span>
+                            <div class="d-flex align-items-baseline justify-content-center" dir="ltr">
+                                <span class="fw-bold text-dark" style="font-size: 1.25rem;">{{ rtrim(rtrim(number_format($package->foreign_price, 2, '.', ''), '0'), '.') }}</span>
+                                <span class="text-muted ms-1" style="font-size: 0.7rem;">ج.م</span>
+                            </div>
+                            @if($package->discount > 0)
+                                @php $origForeign = $package->foreign_price / (1 - ($package->discount / 100)); @endphp
+                                <del class="text-muted mt-1" style="font-size: 0.7rem;" dir="ltr">{{ number_format($origForeign, 1) }} ج.م</del>
+                            @else
+                                <div class="mt-1" style="height: 0.7rem;"></div>
+                            @endif
+                            <form action="{{ route('packages.update', $package->id) }}" method="POST" class="mt-2">
+                                @csrf @method('PUT')
+                                <input type="hidden" name="toggle_show_in_foreign" value="1">
+                                <div class="form-check form-switch m-0 p-0" title="إظهار/إخفاء في الدول الأجنبية" style="min-height: auto; width: 30px;">
+                                    <input class="form-check-input m-0 cursor-pointer" type="checkbox" name="show_in_foreign" value="1" onchange="this.form.submit()" {{ $package->show_in_foreign ? 'checked' : '' }} style="width: 2rem; height: 1rem;">
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    @if($package->discount > 0)
-                        @php $originalPrice = $package->price / (1 - ($package->discount / 100)); @endphp
-                        <div class="pkg-old-price">بدلاً من {{ number_format($originalPrice, 1) }} ج.م</div>
-                    @endif
                 </div>
 
                 <div class="pkg-body">
@@ -333,7 +397,6 @@
                         <form action="{{ route('packages.update', $package->id) }}" method="POST" class="m-0">
                             @csrf @method('PUT')
                             <input type="hidden" name="name" value="{{ $package->name }}">
-                            <input type="hidden" name="price" value="{{ $package->price }}">
                             <input type="hidden" name="base_minutes" value="{{ $package->base_minutes }}">
                             <input type="hidden" name="validity_days" value="{{ $package->validity_days }}">
                             <input type="hidden" name="status" value="{{ $package->status == 'active' ? 'inactive' : 'active' }}">
@@ -372,6 +435,7 @@
                 <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                     <form action="{{ route('packages.update', $package->id) }}" method="POST">
                         @csrf @method('PUT')
+                        <input type="hidden" name="is_full_update" value="1">
                         <div class="modal-header-custom d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 45px; height: 45px;"><i class="fa-solid fa-pen-to-square fs-5"></i></div>
@@ -382,17 +446,45 @@
 
                         <div class="modal-body p-4 p-md-5">
                             <div class="row g-4">
-                                <div class="col-12 col-md-6">
+                                <div class="col-12 col-md-12">
                                     <label class="form-label"><i class="fa-solid fa-tag text-muted me-1"></i> اسم الباقة</label>
                                     <input type="text" name="name" class="form-control custom-input" value="{{ $package->name }}" >
                                 </div>
                                 <div class="col-6 col-md-3">
-                                    <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر النهائي</label>
-                                    <input type="number" name="price" class="form-control custom-input text-success fw-bold" value="{{ $package->price }}" step="0.01" min="50" required>
+                                    <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر (مصر)</label>
+                                    <input type="number" name="egypt_price" class="form-control custom-input text-success fw-bold" value="{{ $package->egypt_price }}" step="0.01" min="0" required>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر (عرب)</label>
+                                    <input type="number" name="arab_price" class="form-control custom-input text-success fw-bold" value="{{ $package->arab_price }}" step="0.01" min="0" required>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر (أجانب)</label>
+                                    <input type="number" name="foreign_price" class="form-control custom-input text-success fw-bold" value="{{ $package->foreign_price }}" step="0.01" min="0" required>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label"><i class="fa-solid fa-percent text-muted me-1"></i> الخصم (%)</label>
                                     <input type="number" name="discount" class="form-control custom-input text-warning fw-bold" value="{{ $package->discount }}" min="0" max="100">
+                                </div>
+
+                                <div class="col-12"><hr class="border-light my-2"></div>
+
+                                <div class="col-12">
+                                    <label class="form-label"><i class="fa-solid fa-earth-americas text-muted me-1"></i> ظهور الباقة حسب المنطقة</label>
+                                    <div class="d-flex gap-4 mt-2">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="show_in_egypt" value="1" id="edit_show_in_egypt_{{ $package->id }}" {{ $package->show_in_egypt ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-bold" for="edit_show_in_egypt_{{ $package->id }}">مصر</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="show_in_arab" value="1" id="edit_show_in_arab_{{ $package->id }}" {{ $package->show_in_arab ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-bold" for="edit_show_in_arab_{{ $package->id }}">الدول العربية</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="show_in_foreign" value="1" id="edit_show_in_foreign_{{ $package->id }}" {{ $package->show_in_foreign ? 'checked' : '' }}>
+                                            <label class="form-check-label fw-bold" for="edit_show_in_foreign_{{ $package->id }}">الدول الأجنبية</label>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="col-12"><hr class="border-light my-2"></div>
@@ -474,17 +566,45 @@
 
                 <div class="modal-body p-4 p-md-5">
                     <div class="row g-4">
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-12">
                             <label class="form-label"><i class="fa-solid fa-tag text-muted me-1"></i> اسم الباقة <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control custom-input" placeholder="مثال: الخطة الماسية" >
+                            <input type="text" name="name" class="form-control custom-input" placeholder="مثال: باقة التميز" required>
                         </div>
                         <div class="col-6 col-md-3">
-                            <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر <span class="text-danger">*</span></label>
-                            <input type="number" name="price" class="form-control custom-input fw-bold" placeholder="0.00" step="0.01" min="50" required>
+                            <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر (مصر) <span class="text-danger">*</span></label>
+                            <input type="number" name="egypt_price" class="form-control custom-input fw-bold" placeholder="0.00" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر (عرب) <span class="text-danger">*</span></label>
+                            <input type="number" name="arab_price" class="form-control custom-input fw-bold" placeholder="0.00" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label"><i class="fa-solid fa-dollar-sign text-muted me-1"></i> السعر (أجانب) <span class="text-danger">*</span></label>
+                            <input type="number" name="foreign_price" class="form-control custom-input fw-bold" placeholder="0.00" step="0.01" min="0" required>
                         </div>
                         <div class="col-6 col-md-3">
                             <label class="form-label"><i class="fa-solid fa-percent text-muted me-1"></i> خصم تسويقي</label>
                             <input type="number" name="discount" class="form-control custom-input" value="0" min="0" max="100">
+                        </div>
+
+                        <div class="col-12"><hr class="border-light my-2"></div>
+
+                        <div class="col-12">
+                            <label class="form-label"><i class="fa-solid fa-earth-americas text-muted me-1"></i> ظهور الباقة حسب المنطقة</label>
+                            <div class="d-flex gap-4 mt-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="show_in_egypt" value="1" id="create_show_in_egypt" checked>
+                                    <label class="form-check-label fw-bold" for="create_show_in_egypt">مصر</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="show_in_arab" value="1" id="create_show_in_arab" checked>
+                                    <label class="form-check-label fw-bold" for="create_show_in_arab">الدول العربية</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="show_in_foreign" value="1" id="create_show_in_foreign" checked>
+                                    <label class="form-check-label fw-bold" for="create_show_in_foreign">الدول الأجنبية</label>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-12"><hr class="border-light my-2"></div>
