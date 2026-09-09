@@ -72,22 +72,23 @@ class PackageController extends Controller
             
             // Only update checkboxes if this is a full form submission
             if ($request->has('is_full_update')) {
-                $data['show_in_egypt'] = $request->has('show_in_egypt');
-                $data['show_in_arab'] = $request->has('show_in_arab');
-                $data['show_in_foreign'] = $request->has('show_in_foreign');
+                $data['show_in_egypt'] = $request->has('show_in_egypt') ? 1 : 0;
+                $data['show_in_arab'] = $request->has('show_in_arab') ? 1 : 0;
+                $data['show_in_foreign'] = $request->has('show_in_foreign') ? 1 : 0;
             } else {
                 // Handle individual toggles
                 if ($request->has('toggle_show_in_egypt')) {
-                    $data['show_in_egypt'] = $request->has('show_in_egypt');
+                    $data['show_in_egypt'] = $request->has('show_in_egypt') ? 1 : 0;
                 }
                 if ($request->has('toggle_show_in_arab')) {
-                    $data['show_in_arab'] = $request->has('show_in_arab');
+                    $data['show_in_arab'] = $request->has('show_in_arab') ? 1 : 0;
                 }
                 if ($request->has('toggle_show_in_foreign')) {
-                    $data['show_in_foreign'] = $request->has('show_in_foreign');
+                    $data['show_in_foreign'] = $request->has('show_in_foreign') ? 1 : 0;
                 }
             }
 
+            \Illuminate\Support\Facades\Log::info('Package Update Data', ['id' => $package->id, 'data' => $data]);
             $package->update($data);
 
             return redirect()
