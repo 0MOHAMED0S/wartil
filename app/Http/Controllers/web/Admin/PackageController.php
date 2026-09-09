@@ -89,6 +89,12 @@ class PackageController extends Controller
             }
 
             \Illuminate\Support\Facades\Log::info('Package Update Data', ['id' => $package->id, 'data' => $data]);
+            dd([
+                'request_all' => $request->all(),
+                'validated' => $request->validated(),
+                'final_data' => $data,
+                'package_before' => $package->toArray()
+            ]);
             $package->update($data);
 
             return redirect()
