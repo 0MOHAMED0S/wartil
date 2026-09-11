@@ -414,12 +414,6 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('settings.freeMinutes') }}"
-                        class="sidebar-link {{ Route::currentRouteName() == 'settings.freeMinutes' ? 'active' : '' }}">
-                        <i class="fa-solid fa-gift"></i> إعدادات الهدايا
-                    </a>
-                </li>
-                <li>
                     <a href="{{ route('profile') }}"
                         class="sidebar-link {{ Str::startsWith(Route::currentRouteName(), 'profile') ? 'active' : '' }}">
                         <i class="fa-solid fa-user-gear"></i> الملف الشخصي
