@@ -1,41 +1,114 @@
 @extends('dashboard.layouts.master')
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-5">
-        <div class="col-lg-8 col-md-10 mx-auto">
-            <div class="card mt-4 shadow-sm border-0">
-                <div class="card-header p-3 bg-gradient-primary text-white border-radius-xl mt-n4 mx-4 shadow-primary text-center">
-                    <h5 class="mb-0 text-white font-weight-bolder">
-                        <i class="fas fa-gift me-2"></i> إعدادات الدقائق المجانية للطلاب الجدد
-                    </h5>
-                    <p class="text-sm mb-0 opacity-8">تحكم في الهدايا التي يحصل عليها الطلاب الجدد عند تسجيل حساباتهم.</p>
+<!-- Import SweetAlert2 for modern alerts -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    .gift-settings-card {
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        border: none;
+        overflow: hidden;
+    }
+    .gift-header {
+        background: linear-gradient(135deg, #6f42c1 0%, #8965cd 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px 15px 0 0;
+    }
+    .gift-icon-container {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        margin-bottom: 15px;
+    }
+    .gift-icon-container i {
+        font-size: 28px;
+        color: white;
+    }
+    .settings-wrapper {
+        padding: 30px;
+        background: #ffffff;
+    }
+    .switch-container {
+        background: #f8f9fa;
+        border: 1px solid #edf2f9;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    .switch-container:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    }
+    .form-control-custom {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px 15px;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        width: 100%;
+        background-color: #fff;
+    }
+    .form-control-custom:focus {
+        border-color: #6f42c1;
+        box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+        outline: 0;
+    }
+    .btn-save {
+        background: linear-gradient(135deg, #6f42c1 0%, #8965cd 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s;
+    }
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(111, 66, 193, 0.3);
+        color: white;
+    }
+</style>
+
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+            
+            <div class="card gift-settings-card">
+                <!-- Header -->
+                <div class="gift-header text-center">
+                    <div class="gift-icon-container">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <h3 class="text-white mb-2 fw-bold">إعدادات الدقائق المجانية</h3>
+                    <p class="text-white-50 mb-0">تحكم في الهدايا الترحيبية للطلاب الجدد عند التسجيل في المنصة</p>
                 </div>
                 
-                <div class="card-body p-4 mt-2">
+                <!-- Body -->
+                <div class="settings-wrapper">
+                    
+                    <!-- Alerts -->
                     @if(session('success'))
-                        <div class="alert alert-success text-white alert-dismissible fade show" role="alert">
-                            <span class="alert-icon align-middle"><i class="fas fa-check-circle"></i></span>
-                            <span class="alert-text fw-bold">{{ session('success') }}</span>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert" style="background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; border-radius: 8px;">
+                            <i class="fas fa-check-circle me-2"></i> <strong>نجاح!</strong> {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
                     @if($errors->any())
-                        <div class="alert alert-danger text-white alert-dismissible fade show" role="alert">
-                            <span class="alert-icon align-middle"><i class="fas fa-exclamation-triangle"></i></span>
-                            <span class="alert-text">
-                                <ul class="mb-0 ps-3">
-                                    @foreach($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </span>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; border-radius: 8px;">
+                            <i class="fas fa-exclamation-triangle me-2"></i> <strong>تنبيه!</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
@@ -43,49 +116,76 @@
                         @csrf
                         
                         <!-- Toggle Switch -->
-                        <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-3 border">
+                        <div class="switch-container mb-4 d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="mb-1 text-dark">تفعيل الميزة</h6>
-                                <p class="text-sm text-muted mb-0">إذا تم تفعيل هذا الخيار، سيحصل الطلاب الجدد على دقائق مجانية تلقائياً.</p>
+                                <h5 class="mb-1 fw-bold" style="color: #2b3445;">تفعيل الميزة</h5>
+                                <p class="text-muted mb-0 font-size-sm">عند تفعيل هذا الخيار، سيحصل الطلاب الجدد على الرصيد المجاني بمجرد إكمال التسجيل.</p>
                             </div>
-                            <div class="form-check form-switch ps-0">
-                                <input class="form-check-input ms-auto float-end" type="checkbox" id="free_minutes_enabled" name="free_minutes_enabled" value="1" {{ $setting->free_minutes_enabled ? 'checked' : '' }} style="transform: scale(1.3); cursor: pointer;">
+                            <div class="form-check form-switch ps-0 m-0">
+                                <input class="form-check-input float-end" type="checkbox" id="free_minutes_enabled" name="free_minutes_enabled" value="1" {{ $setting->free_minutes_enabled ? 'checked' : '' }} style="width: 50px; height: 25px; cursor: pointer;">
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-4">
-                                <div class="form-group">
-                                    <label class="form-label font-weight-bold text-dark">عدد الدقائق المجانية <span class="text-danger">*</span></label>
-                                    <div class="input-group input-group-outline {{ $setting->free_minutes_amount ? 'is-filled' : '' }}">
-                                        <input type="number" class="form-control px-3 border" name="free_minutes_amount" value="{{ old('free_minutes_amount', $setting->free_minutes_amount ?? 0) }}" min="0" step="1" required placeholder="مثال: 30">
-                                    </div>
-                                    <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle ms-1"></i> الرصيد الذي سيتم إضافته للمحفظة.</small>
+                        <!-- Inputs Grid -->
+                        <div class="row g-4 mb-4">
+                            <!-- Minutes Amount -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label class="form-label fw-bold" style="color: #495057;">عدد الدقائق المجانية <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control-custom" name="free_minutes_amount" value="{{ old('free_minutes_amount', $setting->free_minutes_amount ?? 0) }}" min="0" step="1" required placeholder="مثال: 30">
+                                    <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle ms-1 text-primary"></i> الرصيد الذي سيتم إضافته لمحفظة الطالب.</small>
                                 </div>
                             </div>
                             
-                            <div class="col-md-6 mb-4">
-                                <div class="form-group">
-                                    <label class="form-label font-weight-bold text-dark">فترة الصلاحية (بالأيام) <span class="text-danger">*</span></label>
-                                    <div class="input-group input-group-outline {{ $setting->free_minutes_validity_days ? 'is-filled' : '' }}">
-                                        <input type="number" class="form-control px-3 border" name="free_minutes_validity_days" value="{{ old('free_minutes_validity_days', $setting->free_minutes_validity_days ?? 0) }}" min="0" step="1" required placeholder="مثال: 7">
-                                    </div>
-                                    <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle ms-1"></i> اكتب 0 لدقائق دائمة بدون انتهاء.</small>
+                            <!-- Validity Days -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label class="form-label fw-bold" style="color: #495057;">فترة الصلاحية (بالأيام) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control-custom" name="free_minutes_validity_days" value="{{ old('free_minutes_validity_days', $setting->free_minutes_validity_days ?? 0) }}" min="0" step="1" required placeholder="مثال: 7">
+                                    <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle ms-1 text-primary"></i> اكتب <strong class="text-dark">0</strong> لتكون الدقائق بدون تاريخ انتهاء.</small>
                                 </div>
                             </div>
                         </div>
 
-                        <hr class="horizontal dark my-4">
+                        <hr style="background-color: #e9ecef; height: 2px; margin: 30px 0;">
 
+                        <!-- Submit Button -->
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn bg-gradient-primary btn-lg mb-0">
-                                <i class="fas fa-save me-2"></i> حفظ التغييرات
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-save me-2"></i> حفظ الإعدادات
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+            
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleSwitch = document.getElementById('free_minutes_enabled');
+        
+        toggleSwitch.addEventListener('change', function() {
+            if(this.checked) {
+                Swal.fire({
+                    title: 'تم التفعيل!',
+                    text: 'سيتم الآن منح الدقائق المجانية للطلاب الجدد، لا تنسَ حفظ الإعدادات.',
+                    icon: 'success',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#198754'
+                });
+            } else {
+                Swal.fire({
+                    title: 'تم التعطيل!',
+                    text: 'لن يحصل الطلاب الجدد على دقائق مجانية بعد الآن، لا تنسَ حفظ الإعدادات.',
+                    icon: 'warning',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#fd7e14'
+                });
+            }
+        });
+    });
+</script>
 @endsection
