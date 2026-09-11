@@ -189,6 +189,7 @@ class StudentAuthController extends Controller
                 'qualification'       => $request->qualification,
                 'professional_status' => $request->professional_status,
                 'gender'              => $request->gender,
+                'birth_date'          => $request->birth_date,
                 'profile_photo_path'  => $photoPath,
             ]);
 
@@ -351,8 +352,7 @@ class StudentAuthController extends Controller
                 'professional_status',
                 'country_id',
                 'gender',
-
-                'age_group',
+                'birth_date',
                 'reading_level',
                 'preferred_teacher_language',
                 'reading_track',

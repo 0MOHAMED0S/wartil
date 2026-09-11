@@ -30,7 +30,7 @@ class UpdateProfileRequest extends FormRequest
             ],
 
             // 📖 تفضيلاتي التعليمية
-            'age_group'                  => ['sometimes', 'nullable', 'string', 'max:255'],
+            'birth_date'                 => ['sometimes', 'nullable', 'date', 'before:today'],
             'reading_level'              => ['sometimes', 'nullable', 'string', 'max:255'],
             'preferred_teacher_language' => ['sometimes', 'nullable', 'string', 'max:255'],
             'reading_track'              => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -61,7 +61,8 @@ class UpdateProfileRequest extends FormRequest
             'profile_photo_path.max'   => 'حجم الصورة يجب ألا يزيد عن 2 ميجابايت.',
 
             // رسائل الحقول الجديدة (تمت إضافتها للحماية من تجاوز الطول المسموح)
-            'age_group.max'                  => 'اسم الفئة العمرية طويل جدًا.',
+            'birth_date.date'                => 'تاريخ الميلاد غير صحيح.',
+            'birth_date.before'              => 'تاريخ الميلاد يجب أن يكون في الماضي.',
             'reading_level.max'              => 'مستوى القراءة طويل جدًا.',
             'preferred_teacher_language.max' => 'اسم لغة المعلم طويل جدًا.',
             'reading_track.max'              => 'مسار القراءة طويل جدًا.',

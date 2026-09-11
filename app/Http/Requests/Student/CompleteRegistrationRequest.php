@@ -32,6 +32,7 @@ class CompleteRegistrationRequest extends FormRequest
             'qualification' => ['nullable', 'string', 'max:255'],
             'professional_status' => ['nullable', 'string', 'max:255'],
             'gender' => ['required', 'in:male,female'],
+            'birth_date' => ['required', 'date', 'before:today'],
 
             // Profile Photo Field
             'profile_photo_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
@@ -70,6 +71,10 @@ class CompleteRegistrationRequest extends FormRequest
 
             'gender.required' => 'النوع مطلوب.',
             'gender.in' => 'يجب أن يكون النوع ذكر أو أنثى.',
+
+            'birth_date.required' => 'تاريخ الميلاد مطلوب.',
+            'birth_date.date' => 'يجب إدخال تاريخ صحيح.',
+            'birth_date.before' => 'تاريخ الميلاد يجب أن يكون في الماضي.',
 
             'profile_photo_path.image' => 'يجب أن يكون الملف المرفوع صورة.',
             'profile_photo_path.mimes' => 'يجب أن تكون الصورة بصيغة: jpeg, png, jpg, gif.',

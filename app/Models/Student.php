@@ -18,7 +18,7 @@ class Student extends Model
         'gender',
         'profile_photo_path',
 
-        'age_group',
+        'birth_date',
         'reading_level',
         'preferred_teacher_language',
         'reading_track',
