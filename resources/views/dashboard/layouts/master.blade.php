@@ -386,7 +386,7 @@
                 <li>
                     <a href="{{ route('settings.freeMinutes') }}"
                         class="sidebar-link {{ Route::currentRouteName() == 'settings.freeMinutes' ? 'active' : '' }}">
-                        <i class="fa-solid fa-gift"></i> إعدادات الهدايا
+                        <i class="fa-solid fa-gift"></i>  الدقائق المجانيه
                     </a>
                 </li>
                 <li>
