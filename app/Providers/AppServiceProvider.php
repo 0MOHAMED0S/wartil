@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,10 +18,13 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-public function boot(): void
+    public function boot(): void
     {
+        // استخدام Bootstrap لترقيم الصفحات لمنع تكبير أيقونات SVG
+        Paginator::useBootstrapFive();
+
         // أضف auth:sanctum هنا
-    Broadcast::routes(['middleware' => ['auth:sanctum']]);
+        Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
     require base_path('routes/channels.php');
         // 1️⃣ تسجيل أي نجاح في الإشعارات
