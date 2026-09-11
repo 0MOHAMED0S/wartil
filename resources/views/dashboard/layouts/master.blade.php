@@ -384,6 +384,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('settings.freeMinutes') }}"
+                        class="sidebar-link {{ Route::currentRouteName() == 'settings.freeMinutes' ? 'active' : '' }}">
+                        <i class="fa-solid fa-gift"></i> إعدادات الهدايا
+                    </a>
+                </li>
+                <li>
                     <a href="{{ route('admin.subscriptions') }}"
                         class="sidebar-link {{ Str::startsWith(Route::currentRouteName(), 'admin.subscriptions') ? 'active' : '' }}">
                         <i class="fa-solid fa-id-card"></i> الاشتراكات
