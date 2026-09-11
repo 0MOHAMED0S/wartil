@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Student extends Model
 {
     use HasFactory;
+    
+    protected $appends = ['age'];
+
     protected $fillable = [
         'user_id',
         'country_id',
@@ -39,5 +42,13 @@ class Student extends Model
     {
         return $this->belongsToMany(Teacher_application::class, 'favorites', 'student_id', 'teacher_id')
             ->withTimestamps();
+    }
+
+    public function getAgeAttribute()
+    {
+        if ($this->birth_date) {
+            return \Carbon\Carbon::parse($this->birth_date)->age;
+        }
+        return null;
     }
 }
