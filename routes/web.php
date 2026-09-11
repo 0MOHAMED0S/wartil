@@ -53,6 +53,8 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
         Route::post('settings/toggle-registration', [SettingController::class, 'toggleTeacherRegistration'])->name('settings.toggleRegistration');
+        Route::get('settings/free-minutes', [SettingController::class, 'freeMinutes'])->name('settings.freeMinutes');
+        Route::post('settings/free-minutes', [SettingController::class, 'updateFreeMinutes'])->name('settings.updateFreeMinutes');
         Route::post('/teachers/{id}/update-details', [TeacherController::class, 'updateDetails'])->name('teacher.updateDetails');
         Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
 

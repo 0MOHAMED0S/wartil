@@ -219,6 +219,23 @@ class StudentAuthController extends Controller
 
             $student->profile_photo_url = $photoPath ? asset('storage/' . $photoPath) : null;
 
+            // Assign free minutes if enabled
+            $setting = \App\Models\Setting::first();
+            if ($setting && $setting->free_minutes_enabled && $setting->free_minutes_amount > 0) {
+                $expiresAt = $setting->free_minutes_validity_days > 0 
+                    ? now()->addDays($setting->free_minutes_validity_days) 
+                    : null;
+
+                \App\Models\UserPackage::create([
+                    'user_id'           => $user->id,
+                    'package_id'        => null,
+                    'remaining_minutes' => $setting->free_minutes_amount,
+                    'expires_at'        => $expiresAt,
+                    'status'            => 'active',
+                    'is_gift'           => true,
+                ]);
+            }
+
             // Delete the OTP record to prevent reuse
             $otpRecord->delete();
 

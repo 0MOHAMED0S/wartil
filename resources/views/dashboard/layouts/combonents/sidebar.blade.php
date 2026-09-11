@@ -51,6 +51,11 @@
     </a>
 </li>
 <li>
+    <a href="{{ route('settings.freeMinutes') }}" class="sidebar-link {{ Route::currentRouteName() == 'settings.freeMinutes' ? 'active' : '' }}">
+        <i class="fa-solid fa-gift"></i> إعدادات الهدايا
+    </a>
+</li>
+<li>
     <a href="{{ route('profiles.index') }}" class="sidebar-link {{ Str::startsWith(Route::currentRouteName(), 'profiles.') ? 'active' : '' }}">
         <i class="fa-solid fa-tags"></i> الملف الشخصي
     </a>
