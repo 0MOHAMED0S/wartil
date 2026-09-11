@@ -181,9 +181,33 @@ class StudentAuthController extends Controller
 
             $user->markEmailAsVerified();
 
+            $countryId = $request->country_id;
+            
+            if (!$countryId) {
+                try {
+                    $ip = $request->ip();
+                    // In local development, ip-api might not recognize 127.0.0.1, it will fallback
+                    $response = \Illuminate\Support\Facades\Http::timeout(3)->get("http://ip-api.com/json/{$ip}");
+                    if ($response->successful() && $response->json('status') === 'success') {
+                        $countryCode = $response->json('countryCode');
+                        $country = \App\Models\Country::where('code', $countryCode)->first();
+                        if ($country) {
+                            $countryId = $country->id;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('IP Geolocation failed: ' . $e->getMessage());
+                }
+                
+                // Fallback if detection fails
+                if (!$countryId) {
+                    $countryId = \App\Models\Country::first()->id ?? 1;
+                }
+            }
+
             $student = Student::create([
                 'user_id'             => $user->id,
-                'country_id'          => $request->country_id,
+                'country_id'          => $countryId,
                 'phone'               => $request->phone,
                 'address'             => $request->address,
                 'qualification'       => $request->qualification,

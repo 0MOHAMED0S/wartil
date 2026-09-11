@@ -27,7 +27,7 @@ class CompleteRegistrationRequest extends FormRequest
 
             // Student Profile Data
             'phone' => ['required', 'string', 'min:6', 'max:20'],
-            'country_id' => ['required', 'exists:countries,id'],
+            'country_id' => ['nullable', 'exists:countries,id'],
             'address' => ['required', 'string', 'min:5', 'max:500'],
             'qualification' => ['nullable', 'string', 'max:255'],
             'professional_status' => ['nullable', 'string', 'max:255'],
@@ -62,7 +62,6 @@ class CompleteRegistrationRequest extends FormRequest
             'phone.min' => 'رقم الهاتف قصير جدًا.',
             'phone.max' => 'رقم الهاتف طويل جدًا.',
 
-            'country_id.required' => 'الدولة مطلوبة.',
             'country_id.exists' => 'الدولة المحددة غير صحيحة.',
 
             'address.required' => 'العنوان مطلوب.',
