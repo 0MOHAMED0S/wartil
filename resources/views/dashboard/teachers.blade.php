@@ -340,8 +340,8 @@
                                             <div style="font-size: 0.85rem; color: #334155;">
                                                 <i class="fa-solid fa-folder-open text-muted" style="width:18px;"></i>
                                                 <span style="font-weight: 600;">المسارات:</span>
-                                                @if(isset($teacher->profile) && $teacher->profile->tracks->count() > 0)
-                                                    <span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">{{ $teacher->profile->tracks->count() }} مسارات</span>
+                                                @if($teacher->tracks && $teacher->tracks->count() > 0)
+                                                    <span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#tracksModal{{ $teacher->id }}">{{ $teacher->tracks->count() }} مسارات</span>
                                                 @else
                                                     <span class="text-muted small">لا يوجد</span>
                                                 @endif
@@ -370,7 +370,7 @@
                                             </div>
                                             <div style="font-size: 0.85rem; color: #334155;">
                                                 <i class="fa-regular fa-clock text-muted" style="width:18px;"></i> 
-                                                <span style="font-weight: 600;">متاح أسبوعياً:</span> <br>
+                                                <span style="font-weight: 600;">متاح يومياً:</span> <br>
                                                 <span class="ms-4 text-primary fw-bold">{{ $teacher->work_hours ?? 0 }} ساعة</span>
                                             </div>
                                             <div style="font-size: 0.85rem; color: #334155;">
@@ -722,6 +722,26 @@
                         </div>
                     </div>
                 </div>
+
+                @if($teacher->tracks && $teacher->tracks->count() > 0)
+                <div class="modal fade" id="tracksModal{{ $teacher->id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold">المسارات المسجل بها</h5>
+                                <button type="button" class="btn-close m-0" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($teacher->tracks as $track)
+                                        <span class="badge bg-primary px-3 py-2" style="font-size: 0.85rem;">{{ $track->name }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
             @endforeach
         </div>
 
