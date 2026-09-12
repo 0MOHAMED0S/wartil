@@ -1085,7 +1085,7 @@
 
     <script>
         // Lock Scroll on Load
-        document.body.classList.add('loading-locked');
+        // document.body.classList.add('loading-locked');
 
         $(document).ready(function() {
             // Loader Exit
