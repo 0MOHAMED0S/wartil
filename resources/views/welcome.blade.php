@@ -1833,7 +1833,8 @@
                             $finalPrice = $finalPriceUsd * $rate;
                             $currencyCode = $country?->currency_code ?? 'EGP';
                         }
-                        $originalPrice = $hasDiscount ? $finalPrice / (1 - $package->discount / 100) : $finalPrice;
+                        $originalPrice = $finalPrice;
+                        $finalPrice = $hasDiscount ? $originalPrice * (1 - $package->discount / 100) : $originalPrice;
                     @endphp
 
                     <div class="item px-3" data-aos="{{ $hasDiscount ? 'zoom-in' : 'fade-up' }}">
