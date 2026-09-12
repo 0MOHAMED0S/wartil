@@ -95,6 +95,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/teachers-export', [TeacherController::class, 'exportCsv'])->name('admin.teachers.export');
         Route::get('/teachers-export-pdf', [TeacherController::class, 'exportPdf'])->name('admin.teachers.export.pdf');
         Route::get('/students-export', [StudentsController::class, 'exportCsv'])->name('admin.students.export');
+        Route::get('/students-export-pdf', [StudentsController::class, 'exportPdf'])->name('admin.students.export.pdf');
     });
 });
 
