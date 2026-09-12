@@ -317,4 +317,39 @@ public function index(Request $request)
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function exportPdf(Request $request)
+    {
+        // بناء الاستعلام مع العلاقات
+        $query = Teacher_application::with('profile');
+
+        // البحث (مطابق لنفس الفلتر في صفحة العرض)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        // فلترة بالحالة (مطابق لصفحة العرض)
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $teachers = $query->latest()->get();
+
+        // تمرير البيانات لملف الـ View لتوليد الـ PDF
+        $pdf = \PDF::loadView('dashboard.exports.teachers_pdf', compact('teachers'), [], [
+            'title' => 'قائمة المعلمين',
+            'format' => 'A4-L', // عرضي Landscape ليتسع للأعمدة
+            'orientation' => 'L',
+            'autoArabic' => true,
+            'autoLangToFont' => true,
+            'autoScriptToLang' => true
+        ]);
+
+        return $pdf->download('teachers_list_' . date('Y-m-d') . '.pdf');
+    }
 }

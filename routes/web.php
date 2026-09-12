@@ -93,6 +93,7 @@ Route::prefix('admin')->group(function () {
 
         Route::resource('teacher-categories', \App\Http\Controllers\web\Admin\TeacherCategoryController::class)->except(['create', 'show', 'edit']);
         Route::get('/teachers-export', [TeacherController::class, 'exportCsv'])->name('admin.teachers.export');
+        Route::get('/teachers-export-pdf', [TeacherController::class, 'exportPdf'])->name('admin.teachers.export.pdf');
         Route::get('/students-export', [StudentsController::class, 'exportCsv'])->name('admin.students.export');
     });
 });

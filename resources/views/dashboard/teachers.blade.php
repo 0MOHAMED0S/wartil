@@ -136,6 +136,9 @@
             <a href="{{ route('admin.teachers.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
                 <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
             </a>
+            <a href="{{ route('admin.teachers.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm fw-bold">
+                <i class="fa-solid fa-file-pdf me-1"></i> تصدير (PDF)
+            </a>
             <div class="registration-control d-flex align-items-center bg-white border rounded-pill px-2 py-1 shadow-sm gap-2" style="font-size: 0.8rem;">
                 <span class="text-muted fw-bold d-none d-md-inline">حالة التسجيل:</span>
                 <form action="{{ route('settings.toggleRegistration') }}" method="POST" class="m-0 d-flex align-items-center">
