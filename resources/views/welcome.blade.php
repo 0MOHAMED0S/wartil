@@ -54,7 +54,7 @@
         /* =========================================
            1. CINEMATIC LOADER
            ========================================= */
-        #loader-screen {
+        /* #loader-screen {
             position: fixed;
             top: 0;
             left: 0;
@@ -125,7 +125,7 @@
                 opacity: 1;
                 transform: translateY(0);
             }
-        }
+        } */
 
         .slide-up-exit {
             transform: translateY(-100%);
