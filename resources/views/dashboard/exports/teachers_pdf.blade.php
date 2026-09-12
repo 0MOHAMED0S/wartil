@@ -54,7 +54,9 @@
                 <th>رقم الهاتف</th>
                 <th>الجنسية</th>
                 <th>الإقامة</th>
-                <th>الجنس</th>
+                <th>المؤهل</th>
+                <th>الخبرة</th>
+                <th>اللغات</th>
                 <th>الحالة</th>
                 <th>تاريخ الانضمام</th>
             </tr>
@@ -62,8 +64,11 @@
         <tbody>
             @foreach($teachers as $index => $teacher)
             @php
-                $userName = optional(optional($teacher->profile)->user)->name ?? $teacher->name;
+                $userName = optional(optional($teacher->profile)->user)->name ?? $teacher->full_name;
                 $userEmail = optional(optional($teacher->profile)->user)->email ?? $teacher->email;
+                $langsRaw = $teacher->languages;
+                $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
+                $languagesStr = count($langs) > 0 ? implode('، ', $langs) : 'العربية';
             @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
@@ -72,9 +77,9 @@
                 <td dir="ltr">{{ $teacher->phone }}</td>
                 <td>{{ $teacher->origin_country ?? 'غير محدد' }}</td>
                 <td>{{ $teacher->residence_location ?? 'غير محدد' }}</td>
-                <td>
-                    @if($teacher->gender == 'male') ذكر @elseif($teacher->gender == 'female') أنثى @else غير محدد @endif
-                </td>
+                <td>{{ $teacher->qualification ?? '-' }}</td>
+                <td>{{ $teacher->experience_years ? $teacher->experience_years . ' سنوات' : '-' }}</td>
+                <td>{{ $languagesStr }}</td>
                 <td>
                     @if($teacher->status == 'approved')
                         <span class="text-success">مقبول</span>
