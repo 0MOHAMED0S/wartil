@@ -1814,7 +1814,7 @@
                     @php
                         $hasDiscount = $package->discount > 0;
                         $isVip = str_contains(strtolower($package->name), 'vip');
-                        $finalPrice = $package->egypt_price; // Default
+                        $originalPrice = $package->egypt_price; // Default base price
                         $currencyCode = 'EGP';
                         if(auth()->check() && auth()->user()->isStudent()) {
                             $studentProfile = auth()->user()->studentProfile;
@@ -1828,12 +1828,11 @@
                             }
 
                             $pricingService = app(\App\Services\PricingEngineService::class);
-                            $finalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile ?? auth()->user()->student);
+                            $basePriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile ?? auth()->user()->student);
                             $rate = $country?->rate_to_usd ?? 1;
-                            $finalPrice = $finalPriceUsd * $rate;
+                            $originalPrice = $basePriceUsd * $rate;
                             $currencyCode = $country?->currency_code ?? 'EGP';
                         }
-                        $originalPrice = $finalPrice;
                         $finalPrice = $hasDiscount ? $originalPrice * (1 - $package->discount / 100) : $originalPrice;
                     @endphp
 
