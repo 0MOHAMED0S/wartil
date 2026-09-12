@@ -497,12 +497,12 @@
 
 <body>
 
-    {{-- <div id="loader-screen">
+    <!-- <div id="loader-screen">
         <div class="loader-container">
             <h1 class="loader-brand" data-text="ورتل">ورتل</h1>
             <div class="loader-sub">عذراً، التقديم مغلق</div>
         </div>
-    </div> --}}
+    </div>  -->
 
     <div class="animated-bg">
         <div class="particle p1" data-speed="2"></div>

@@ -620,12 +620,12 @@
 
 <body>
 
-    <div id="loader-screen">
+    <!-- <div id="loader-screen">
         <div class="loader-container">
             <h1 class="loader-brand" data-text="ورتل">ورتل</h1>
             <div class="loader-sub">انضم للكادر التعليمي</div>
         </div>
-    </div>
+    </div> -->
 
     <nav class="navbar fixed-top">
         <div class="container">

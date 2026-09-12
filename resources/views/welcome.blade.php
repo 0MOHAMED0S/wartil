@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ورتل - رتل القرآن ترتيلاً</title>
+    <title>تطبيق ورتل -   منصه تعليم القرآن </title>
     <link rel="icon" href="{{ asset('images/mainlogo.png') }}" type="image/png">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -1324,7 +1324,8 @@
             overflow: hidden;
             position: relative;
             width: 100%;
-            height: 250px; /* Professional banner height */
+            aspect-ratio: 16 / 7;
+            height: auto;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02); /* الظل الناعم المتطابق مع صورتك */
             border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex;
@@ -1380,7 +1381,8 @@
         /* 📱 مقاسات مخصصة للموبايل لتحافظ على نفس الشكل */
         @media (max-width: 768px) {
             .ad-banner-wrapper {
-                height: 200px;
+                aspect-ratio: 16 / 7;
+                height: auto;
                 border-radius: 16px;
             }
             .promotions-section {
@@ -1395,12 +1397,12 @@
 
 <body>
 
-    <div id="loader-screen">
+    <!-- <div id="loader-screen">
         <div class="loader-container">
             <h1 class="loader-brand" data-text="ورتل">ورتل</h1>
             <div class="loader-sub">ورتل القرآن ترتيلاً</div>
         </div>
-    </div>
+    </div> -->
 
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
