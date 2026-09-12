@@ -2165,7 +2165,7 @@
 
     <script>
         // ADD NO SCROLL ON LOAD
-        document.body.classList.add('loading-locked');
+        // document.body.classList.add('loading-locked');
 
         $(document).ready(function() {
             // Loader Exit Logic
