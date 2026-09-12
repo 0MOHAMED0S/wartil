@@ -55,6 +55,7 @@
                 <th>الجنسية</th>
                 <th>الإقامة</th>
                 <th>المؤهل</th>
+                <th>الفئة</th>
                 <th>الخبرة</th>
                 <th>اللغات</th>
                 <th>الحالة</th>
@@ -69,6 +70,7 @@
                 $langsRaw = $teacher->languages;
                 $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
                 $languagesStr = count($langs) > 0 ? implode('، ', $langs) : 'العربية';
+                $teacherCategory = optional(optional($teacher->profile)->category)->name ?? '-';
             @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
@@ -78,6 +80,7 @@
                 <td>{{ $teacher->origin_country ?? 'غير محدد' }}</td>
                 <td>{{ $teacher->residence_location ?? 'غير محدد' }}</td>
                 <td>{{ $teacher->qualification ?? '-' }}</td>
+                <td>{{ $teacherCategory }}</td>
                 <td>{{ $teacher->experience_years ? $teacher->experience_years . ' سنوات' : '-' }}</td>
                 <td>{{ $languagesStr }}</td>
                 <td>
