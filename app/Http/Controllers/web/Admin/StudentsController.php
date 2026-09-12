@@ -299,4 +299,57 @@ public function index(Request $request)
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function exportPdf(Request $request)
+    {
+        $query = User::where('role', 'student')->with('student.country', 'packages.package');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%')
+                  ->orWhereHas('student', function ($sq) use ($search) {
+                      $sq->where('phone', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        if ($request->filled('country') && $request->country !== 'all') {
+            $country = $request->country;
+            $query->whereHas('student.country', function ($q) use ($country) {
+                $q->where('name', $country);
+            });
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        if ($request->filled('filter') && $request->filter !== 'all') {
+            if ($request->filter === 'gift') {
+                $query->whereHas('packages', function ($q) {
+                    $q->where('is_gift', true);
+                });
+            } elseif (str_starts_with($request->filter, 'pkg-')) {
+                $pkgName = str_replace('pkg-', '', $request->filter);
+                $query->whereHas('packages.package', function ($q) use ($pkgName) {
+                    $q->where('name', $pkgName);
+                });
+            }
+        }
+
+        $students = $query->latest()->get();
+
+        $pdf = \PDF::loadView('dashboard.exports.students_pdf', compact('students'), [], [
+            'title' => 'قائمة الطلاب',
+            'format' => 'A4-L',
+            'orientation' => 'L',
+            'autoArabic' => true,
+            'autoLangToFont' => true,
+            'autoScriptToLang' => true
+        ]);
+
+        return $pdf->download('students_list_' . date('Y-m-d') . '.pdf');
+    }
 }

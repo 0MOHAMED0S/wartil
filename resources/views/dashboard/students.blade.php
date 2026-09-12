@@ -538,6 +538,9 @@
             <a href="{{ route('admin.students.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
                 <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
             </a>
+            <a href="{{ route('admin.students.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm fw-bold">
+                <i class="fa-solid fa-file-pdf me-1"></i> تصدير (PDF)
+            </a>
         </div>
     </div>
 @endsection
