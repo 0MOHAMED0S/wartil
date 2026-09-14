@@ -133,12 +133,6 @@
             <h5 class="m-0 fw-bold fs-5">إدارة طلبات التسجيل</h5>
         </div>
         <div class="d-flex align-items-center gap-2 gap-md-3 flex-wrap justify-content-end">
-            <a href="{{ route('admin.teachers.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
-                <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
-            </a>
-            <a href="{{ route('admin.teachers.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm fw-bold">
-                <i class="fa-solid fa-file-pdf me-1"></i> تصدير (PDF)
-            </a>
             <div class="registration-control d-flex align-items-center bg-white border rounded-pill px-2 py-1 shadow-sm gap-2" style="font-size: 0.8rem;">
                 <span class="text-muted fw-bold d-none d-md-inline">حالة التسجيل:</span>
                 <form action="{{ route('settings.toggleRegistration') }}" method="POST" class="m-0 d-flex align-items-center">
@@ -231,6 +225,16 @@
                 <input type="text" name="search" class="form-control search-input w-100" placeholder="بحث..." value="{{ request('search') }}">
             </div>
         </form>
+
+        {{-- أزرار التصدير --}}
+        <div class="d-flex justify-content-end gap-2 mb-3 mt-3">
+            <a href="{{ route('admin.teachers.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
+                <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
+            </a>
+            <a href="{{ route('admin.teachers.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm fw-bold">
+                <i class="fa-solid fa-file-pdf me-1"></i> تصدير (PDF)
+            </a>
+        </div>
 
         {{-- Table --}}
         <div class="card table-card border-0 shadow-sm mb-5">
