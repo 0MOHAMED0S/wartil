@@ -256,11 +256,13 @@
                                     $userName = optional(optional($teacher->profile)->user)->name ?? $teacher->full_name;
                                     $userEmail = optional(optional($teacher->profile)->user)->email ?? $teacher->email;
                                     $imagePath = $teacher->status == 'pending' ? $teacher->profile_photo_path : (optional($teacher->profile)->profile_photo_path ?? $teacher->profile_photo_path);
+                                    $langsRaw = $teacher->languages;
+                                    $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
                                 @endphp
                                 
-                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <tr style="background: #fff;">
                                     {{-- 1. Teacher Info (Stacked) --}}
-                                    <td style="padding: 16px; text-align: right;">
+                                    <td style="padding: 16px; text-align: right; border-bottom: none;">
                                         <div class="d-flex align-items-center gap-3 flex-wrap">
                                             <img src="{{ $imagePath ? asset('storage/' . $imagePath) : asset('images/default-avatar.png') }}" 
                                                  alt="Profile" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
@@ -270,11 +272,11 @@
                                                     @if($teacher->gender == 'male') <i class="fa-solid fa-mars text-primary ms-1" title="ذكر"></i> @elseif($teacher->gender == 'female') <i class="fa-solid fa-venus text-danger ms-1" title="أنثى"></i> @endif
                                                 </span>
                                                 <span style="color: #64748b; font-size: 0.85rem;"><i class="fa-solid fa-envelope me-1"></i>{{ $userEmail }}</span>
-                                                <div class="d-flex gap-3 align-items-center">
+                                                <div class="d-flex gap-3 align-items-center mt-1">
                                                     <span style="color: #0d9488; font-size: 0.85rem; font-weight: 600;"><i class="fa-solid fa-phone me-1"></i><span dir="ltr">{{ $teacher->phone }}</span></span>
                                                     @if($teacher->cv_pdf_path)
-                                                        <a href="{{ asset('storage/' . $teacher->cv_pdf_path) }}" target="_blank" class="text-danger" title="عرض السيرة الذاتية" style="font-size: 1.1rem;">
-                                                            <i class="fa-solid fa-file-pdf"></i>
+                                                        <a href="{{ asset('storage/' . $teacher->cv_pdf_path) }}" target="_blank" class="badge bg-soft-danger text-danger text-decoration-none" title="عرض السيرة الذاتية" style="font-size: 0.75rem;">
+                                                            <i class="fa-solid fa-file-pdf me-1"></i> السيرة الذاتية
                                                         </a>
                                                     @endif
                                                 </div>
@@ -283,7 +285,7 @@
                                     </td>
 
                                     {{-- 2. Location & Languages (Stacked) --}}
-                                    <td style="padding: 16px;">
+                                    <td style="padding: 16px; border-bottom: none;">
                                         <div class="d-flex flex-column gap-2">
                                             <div style="font-size: 0.85rem; color: #334155;">
                                                 <i class="fa-solid fa-earth-americas text-muted" style="width:18px;"></i> <strong>الجنسية:</strong> {{ $teacher->origin_country ?? 'غير محدد' }}
@@ -293,43 +295,20 @@
                                             </div>
                                             <div style="font-size: 0.85rem; color: #334155;">
                                                 <i class="fa-solid fa-language text-muted" style="width:18px;"></i> <strong>اللغات:</strong> 
-                                                @php 
-                                                    $langsRaw = $teacher->languages;
-                                                    $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
-                                                @endphp
                                                 {{ count($langs) > 0 ? implode('، ', $langs) : 'العربية' }}
                                             </div>
                                         </div>
                                     </td>
 
                                     {{-- 3. Category & Tracks (Stacked) --}}
-                                    <td style="padding: 16px;">
+                                    <td style="padding: 16px; border-bottom: none;">
                                         <div class="d-flex flex-column gap-2">
                                             @if($teacher->status == 'approved' && $teacher->profile)
-                                                @php
-                                                    $catClass = 'cat-1';
-                                                    if($teacher->profile->category_id == 2) { $catClass = 'cat-2'; }
-                                                    elseif($teacher->profile->category_id == 3) { $catClass = 'cat-3'; }
-                                                    elseif($teacher->profile->category_id == 4) { $catClass = 'cat-4'; }
-                                                @endphp
-                                                <form action="{{ route('teacher.updateDetails', $teacher->id) }}" method="POST" class="m-0">
-                                                    @csrf
-                                                    <input type="hidden" name="status" value="approved">
-                                                    <input type="hidden" name="name" value="{{ $userName }}">
-                                                    <input type="hidden" name="email" value="{{ $userEmail }}">
-                                                    <input type="hidden" name="salary" value="{{ optional($teacher->profile)->salary ?? 0 }}">
-                                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                                        <i class="fa-solid fa-star text-warning" style="width:18px;"></i> 
-                                                        <select name="category_id" class="form-select form-select-sm {{ $catClass }} border-0 fw-bold shadow-sm" onchange="this.form.submit()" style="max-width: 130px; font-size: 0.8rem;">
-                                                            <option value="">بدون فئة</option>
-                                                            @foreach($categories ?? [] as $category)
-                                                                <option value="{{ $category->id }}" {{ $teacher->profile->category_id == $category->id ? 'selected' : '' }}>
-                                                                    {{ $category->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                </form>
+                                                <div style="font-size: 0.85rem; color: #334155;">
+                                                    <i class="fa-solid fa-star text-warning" style="width:18px;"></i>
+                                                    <span style="font-weight: 600;">الفئة:</span>
+                                                    <span class="badge bg-light text-dark border">{{ optional($teacher->profile->category)->name ?? 'بدون فئة' }}</span>
+                                                </div>
                                             @else
                                                 <div style="font-size: 0.85rem; color: #334155;">
                                                     <i class="fa-solid fa-briefcase text-muted" style="width:18px;"></i>
@@ -348,7 +327,11 @@
                                                 <i class="fa-solid fa-folder-open text-muted" style="width:18px;"></i>
                                                 <span style="font-weight: 600;">المسارات:</span>
                                                 @if($teacher->tracks && $teacher->tracks->count() > 0)
-                                                    <span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#tracksModal{{ $teacher->id }}">{{ $teacher->tracks->count() }} مسارات</span>
+                                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                                    @foreach($teacher->tracks as $track)
+                                                        <span class="badge bg-soft-primary text-primary" style="font-size: 0.7rem;">{{ $track->name }}</span>
+                                                    @endforeach
+                                                    </div>
                                                 @else
                                                     <span class="text-muted small">لا يوجد</span>
                                                 @endif
@@ -364,11 +347,18 @@
                                                 <span style="font-weight: 600;">الخبرة:</span> 
                                                 <span class="text-muted">{{ $teacher->experience_years ? $teacher->experience_years . ' سنوات' : 'غير محدد' }}</span>
                                             </div>
+                                            @if($teacher->ijazas_text)
+                                            <div style="font-size: 0.85rem; color: #334155;">
+                                                <i class="fa-solid fa-book-quran text-muted" style="width:18px;"></i>
+                                                <span style="font-weight: 600;">الإجازات:</span> 
+                                                <span class="text-muted">{{ Str::limit($teacher->ijazas_text, 25) }}</span>
+                                            </div>
+                                            @endif
                                         </div>
                                     </td>
 
                                     {{-- 4. Date & Availability (Stacked) --}}
-                                    <td style="padding: 16px;">
+                                    <td style="padding: 16px; border-bottom: none;">
                                         <div class="d-flex flex-column gap-2">
                                             <div style="font-size: 0.85rem; color: #334155;">
                                                 <i class="fa-regular fa-calendar-plus text-muted" style="width:18px;"></i> 
@@ -389,35 +379,98 @@
                                                 @endphp
                                                 <span class="ms-4 text-success fw-bold">{{ $totalHours }} ساعة</span>
                                             </div>
+                                            <div style="font-size: 0.85rem; color: #334155;">
+                                                <i class="fa-solid fa-wifi text-muted" style="width:18px;"></i>
+                                                <span style="font-weight: 600;">الإنترنت:</span> 
+                                                <span class="badge bg-light text-dark border">{{ $teacher->internet_quality ?? 'غير محدد' }}</span>
+                                            </div>
+                                            <div style="font-size: 0.85rem; color: #334155;">
+                                                <i class="fa-solid fa-laptop-code text-muted" style="width:18px;"></i>
+                                                <span style="font-weight: 600;">التقنية:</span> 
+                                                <span class="badge bg-light text-dark border">{{ $teacher->tech_skills ?? 'غير محدد' }}</span>
+                                            </div>
                                         </div>
                                     </td>
 
-                                    {{-- 5. Actions --}}
-                                    <td style="padding: 16px; text-align: center; vertical-align: middle;">
+                                    {{-- 5. Actions / Status --}}
+                                    <td style="padding: 16px; text-align: center; vertical-align: middle; border-bottom: none;">
                                         <div class="d-flex flex-column gap-2 justify-content-center align-items-center">
-                                            <button class="btn btn-sm btn-outline-primary" style="width: 100px;" data-bs-toggle="modal" data-bs-target="#detailsModal{{ $teacher->id }}" title="عرض التفاصيل">
-                                                <i class="fa-solid fa-eye me-1"></i> التفاصيل
-                                            </button>
-                                            
-                                            @if($teacher->status == 'pending')
-                                                <div class="d-flex gap-2 w-100 justify-content-center">
-                                                    <form action="{{ route('teacher.approve', $teacher->id) }}" method="POST" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-sm btn-success" style="width: 45px;" title="قبول"><i class="fa-solid fa-check"></i></button>
-                                                    </form>
-                                                    <form action="{{ route('teacher.reject', $teacher->id) }}" method="POST" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-sm btn-danger" style="width: 45px;" title="رفض"><i class="fa-solid fa-xmark"></i></button>
-                                                    </form>
-                                                </div>
+                                            @if($teacher->status == 'approved')
+                                                <span class="badge bg-success px-3 py-2 rounded-pill w-100" style="font-size: 0.8rem;"><i class="fa-solid fa-check me-1"></i> مقبول</span>
+                                            @elseif($teacher->status == 'rejected')
+                                                <span class="badge bg-danger px-3 py-2 rounded-pill w-100" style="font-size: 0.8rem;"><i class="fa-solid fa-ban me-1"></i> مرفوض</span>
+                                            @elseif($teacher->status == 'pending')
+                                                <span class="badge bg-warning px-3 py-2 rounded-pill w-100 text-dark" style="font-size: 0.8rem;"><i class="fa-solid fa-clock me-1"></i> قيد المراجعة</span>
                                             @else
-                                                @if($teacher->status == 'approved')
-                                                    <span class="badge bg-success px-3 py-2 rounded-pill w-100" style="font-size: 0.8rem;"><i class="fa-solid fa-check me-1"></i> مقبول</span>
-                                                @elseif($teacher->status == 'rejected')
-                                                    <span class="badge bg-danger px-3 py-2 rounded-pill w-100" style="font-size: 0.8rem;"><i class="fa-solid fa-ban me-1"></i> مرفوض</span>
-                                                @else
-                                                    <span class="badge bg-secondary px-3 py-2 rounded-pill w-100" style="font-size: 0.8rem;">غير مفعل</span>
-                                                @endif
+                                                <span class="badge bg-secondary px-3 py-2 rounded-pill w-100" style="font-size: 0.8rem;">غير مفعل</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                {{-- Row 2: Expanded Edit/Approve Form --}}
+                                <tr style="border-bottom: 3px solid #e2e8f0; background: #fafafa;">
+                                    <td colspan="5" style="padding: 12px 16px; border-top: 1px dashed #e2e8f0;">
+                                        <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center gap-3">
+                                            <span class="fw-bold text-muted small" style="white-space: nowrap;"><i class="fa-solid fa-gears me-1"></i> إدارة الحساب:</span>
+                                            
+                                            @if ($teacher->status == 'pending')
+                                                <form action="{{ route('teacher.approve', $teacher->id) }}" method="POST" id="approveForm{{ $teacher->id }}" class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 mb-0" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="email" name="email" class="form-control form-control-sm shadow-sm border-0" value="{{ $teacher->email }}" required style="width: 200px;" placeholder="البريد الإلكتروني">
+                                                    
+                                                    <select name="category_id" class="form-select form-select-sm fw-bold shadow-sm border-0" required style="width: 160px;">
+                                                        <option value="">-- اختر الفئة --</option>
+                                                        @foreach($categories as $category)
+                                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    
+                                                    <input type="password" name="password" class="form-control form-control-sm shadow-sm border-0" placeholder="كلمة المرور (للتفعيل)" required minlength="8" style="width: 160px;">
+                                                    
+                                                    <div class="d-flex align-items-center gap-1 bg-white border px-2 py-1 rounded shadow-sm" style="font-size: 0.8rem;">
+                                                        <i class="fa-solid fa-camera text-muted" title="الصورة الشخصية"></i>
+                                                        <input type="file" name="profile_photo_path" accept="image/*" class="form-control form-control-sm border-0 shadow-none p-0" style="width: 130px; font-size: 0.75rem;" title="تغيير الصورة">
+                                                    </div>
+
+                                                    <button type="submit" class="btn btn-sm btn-success fw-bold px-3 shadow-sm">
+                                                        <i class="fa-solid fa-check me-1"></i> قبول وتفعيل
+                                                    </button>
+                                                </form>
+                                                
+                                                <form action="{{ route('teacher.reject', $teacher->id) }}" method="POST" class="m-0">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold px-3 shadow-sm" onclick="return confirm('هل أنت متأكد من رفض هذا الطلب؟')">
+                                                        <i class="fa-solid fa-xmark me-1"></i> رفض
+                                                    </button>
+                                                </form>
+                                            
+                                            @elseif($teacher->status == 'approved' || $teacher->status == 'not_active')
+                                                <form action="{{ route('teacher.updateDetails', $teacher->id) }}" method="POST" id="updateForm{{ $teacher->id }}" class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 mb-0" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="text" name="name" class="form-control form-control-sm shadow-sm border-0" value="{{ $userName }}" required style="width: 180px;" placeholder="الاسم">
+                                                    <input type="email" name="email" class="form-control form-control-sm shadow-sm border-0" value="{{ $userEmail }}" required style="width: 180px;" placeholder="البريد الإلكتروني">
+                                                    
+                                                    <select name="status" class="form-select form-select-sm fw-bold shadow-sm border-0 {{ $teacher->status == 'approved' ? 'text-success' : 'text-secondary' }}" style="width: 140px;">
+                                                        <option value="approved" {{ $teacher->status == 'approved' ? 'selected' : '' }}>نشط (مقبول)</option>
+                                                        <option value="not_active" {{ $teacher->status == 'not_active' ? 'selected' : '' }}>غير مفعل</option>
+                                                    </select>
+
+                                                    <select name="category_id" class="form-select form-select-sm fw-bold shadow-sm border-0" required style="width: 140px;">
+                                                        <option value="" disabled>-- اختر الفئة --</option>
+                                                        @foreach($categories as $category)
+                                                            <option value="{{ $category->id }}" {{ (optional($teacher->profile)->category_id == $category->id) ? 'selected' : '' }}>
+                                                                {{ $category->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+
+                                                    <input type="password" name="password" class="form-control form-control-sm shadow-sm border-0" placeholder="تغيير المرور..." minlength="8" style="width: 130px;">
+                                                    
+                                                    <button type="submit" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm">
+                                                        <i class="fa-solid fa-save me-1"></i> حفظ
+                                                    </button>
+                                                </form>
                                             @endif
                                         </div>
                                     </td>
@@ -445,311 +498,7 @@
                 @endif
             </div>
         </div>
-            {{-- MODALS --}}
-            @foreach ($teachers as $teacher)
-                @php
-                    $modalName = optional(optional($teacher->profile)->user)->name ?? $teacher->full_name;
-                    $modalImg = $teacher->status == 'pending' ? $teacher->profile_photo_path : (optional($teacher->profile)->profile_photo_path ?? $teacher->profile_photo_path);
-                @endphp
-                <div class="modal fade details-modal" id="detailsModal{{ $teacher->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-lg-down">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title fw-bold">
-                                    <span class="text-muted fw-light fs-6">طلب رقم #{{ $teacher->id }}</span> | مراجعة بيانات المعلم
-                                </h5>
-                                <button type="button" class="btn-close m-0" data-bs-dismiss="modal"></button>
-                            </div>
 
-                            <div class="modal-body p-0">
-                                <div class="row g-0 h-100">
-
-                                    {{-- Sidebar (Image & Edit Forms) --}}
-                                    <div class="col-lg-3 modal-sidebar-col bg-light p-4 d-flex flex-column border-end">
-
-                                        <div class="text-center mb-3">
-                                            <div class="profile-img-container">
-                                                <img src="{{ $modalImg ? asset('storage/' . $modalImg) : 'https://ui-avatars.com/api/?name=' . urlencode($modalName) . '&background=1a4d2e&color=fff&size=128' }}"
-                                                     class="profile-img-main preview-img-{{ $teacher->id }}">
-
-                                                <div class="upload-btn-wrapper">
-                                                    <label for="photoInput{{ $teacher->id }}" class="btn-upload-icon" title="تغيير الصورة">
-                                                        <i class="fa-solid fa-camera"></i>
-                                                    </label>
-                                                    <input
-                                                        form="{{ $teacher->status == 'pending' ? 'approveForm'.$teacher->id : 'updateForm'.$teacher->id }}"
-                                                        type="file"
-                                                        name="profile_photo" id="photoInput{{ $teacher->id }}"
-                                                        style="display: none;" accept="image/*"
-                                                        {{ $teacher->status == 'pending' ? 'required' : '' }}
-                                                        onchange="previewFile(this, 'preview-img-{{ $teacher->id }}')">
-                                                </div>
-                                            </div>
-
-                                            <h5 class="fw-bold mb-1">{{ $modalName }}</h5>
-                                            <span class="badge bg-primary mb-2">{{ $teacher->gender == 'male' ? 'ذكر' : 'أنثى' }}</span>
-
-                                            @if ($teacher->status == 'approved')
-                                                <div class="mt-2"><span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i> الحساب نشط</span></div>
-                                            @elseif($teacher->status == 'not_active')
-                                                <div class="mt-2"><span class="badge bg-secondary"><i class="fa-solid fa-pause-circle me-1"></i> الحساب غير مفعل</span></div>
-                                            @elseif($teacher->status == 'rejected')
-                                                <div class="mt-2"><span class="badge bg-danger"><i class="fa-solid fa-times-circle me-1"></i> الطلب مرفوض</span></div>
-                                            @endif
-                                        </div>
-
-                                        {{-- PENDING STATE FORM --}}
-                                        @if ($teacher->status == 'pending')
-                                            <form action="{{ route('teacher.approve', $teacher->id) }}" method="POST"
-                                                enctype="multipart/form-data" id="approveForm{{ $teacher->id }}" class="flex-grow-1">
-                                                @csrf
-                                                <div class="text-center mb-3"><small class="text-danger fw-bold" style="font-size:0.7rem">* الصورة الشخصية مطلوبة للقبول</small></div>
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">البريد الإلكتروني <span class="text-danger">*</span></label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
-                                                        <input type="email" name="email" class="form-control border-start-0" value="{{ $teacher->email }}" required>
-                                                    </div>
-                                                </div>
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">تحديد الفئة <span class="text-danger">*</span></label>
-                                                    <select name="category_id" class="form-select border-0 bg-transparent ps-0 fw-bold" required>
-                                                        <option value="">-- اختر الفئة --</option>
-                                                        @foreach($categories as $category)
-                                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">تعيين كلمة المرور <span class="text-danger">*</span></label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
-                                                        <input type="password" name="password" class="form-control border-start-0" placeholder="********" required minlength="8">
-                                                    </div>
-                                                </div>
-                                            </form>
-
-                                        {{-- EDIT STATE FORM --}}
-                                        @elseif($teacher->status == 'approved' || $teacher->status == 'not_active')
-                                            <form action="{{ route('teacher.updateDetails', $teacher->id) }}" method="POST"
-                                                  enctype="multipart/form-data" id="updateForm{{ $teacher->id }}" class="flex-grow-1">
-                                                @csrf
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">الاسم الكامل</label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
-                                                        <input type="text" name="name" class="form-control border-start-0"
-                                                               value="{{ optional(optional($teacher->profile)->user)->name ?? $teacher->full_name }}" required>
-                                                    </div>
-                                                </div>
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">البريد الإلكتروني</label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
-                                                        <input type="email" name="email" class="form-control border-start-0"
-                                                               value="{{ optional(optional($teacher->profile)->user)->email ?? $teacher->email }}" required>
-                                                    </div>
-                                                </div>
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">حالة الحساب</label>
-                                                    <select name="status" class="form-select border-0 bg-transparent ps-0 fw-bold {{ $teacher->status == 'approved' ? 'text-success' : 'text-secondary' }}">
-                                                        <option value="approved" {{ $teacher->status == 'approved' ? 'selected' : '' }}>نشط (مقبول)</option>
-                                                        <option value="not_active" {{ $teacher->status == 'not_active' ? 'selected' : '' }}>غير مفعل</option>
-                                                    </select>
-                                                </div>
-
-
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">تحديد الفئة</label>
-                                                    <select name="category_id" class="form-select border-0 bg-transparent ps-0 fw-bold" required>
-                                                        <option value="" disabled>-- اختر الفئة --</option>
-                                                        @foreach($categories as $category)
-                                                            <option value="{{ $category->id }}" {{ (optional($teacher->profile)->category_id == $category->id) ? 'selected' : '' }}>
-                                                                {{ $category->name }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-
-                                                <div class="admin-input-box text-start">
-                                                    <label class="form-label">تغيير كلمة المرور</label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
-                                                        <input type="password" name="password" class="form-control border-start-0"
-                                                               placeholder="اتركه فارغاً للإبقاء عليه" minlength="8">
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        @endif
-
-                                    </div>
-
-                                    {{-- Details Content --}}
-                                    <div class="col-lg-9 p-4">
-                                        <div class="row g-4">
-                                            <div class="col-md-6">
-                                                <h6 class="info-section-title">البيانات الشخصية</h6>
-                                                <div class="row">
-                                                    <div class="col-6 detail-item">
-                                                        <span class="detail-label">الاسم (في الطلب)</span>
-                                                        <span class="detail-val">{{ $teacher->full_name }}</span>
-                                                    </div>
-                                                    <div class="col-6 detail-item">
-                                                        <span class="detail-label">رقم الهاتف</span>
-                                                        <a href="https://wa.me/{{ str_replace(['+', ' '], '', $teacher->phone) }}" target="_blank" class="detail-val text-success text-decoration-none" style="direction: ltr; display:inline-block;">
-                                                            <i class="fa-brands fa-whatsapp me-1"></i> {{ $teacher->phone }}
-                                                        </a>
-                                                    </div>
-                                                    <div class="col-6 detail-item">
-                                                        <span class="detail-label"> البريد</span>
-                                                        <span class="detail-val">{{ $teacher->email }}</span>
-                                                    </div>
-                                                    <div class="col-6 detail-item">
-                                                        <span class="detail-label">بلد الأصل</span>
-                                                        <span class="detail-val">{{ $teacher->origin_country }}</span>
-                                                    </div>
-                                                    <div class="col-6 detail-item">
-                                                        <span class="detail-label">مكان الإقامة</span>
-                                                        <span class="detail-val">{{ $teacher->residence_location }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <h6 class="info-section-title">المؤهلات واللغات</h6>
-                                                <div class="detail-item">
-                                                    <span class="detail-label">المؤهل العلمي</span>
-                                                    <span class="detail-val">{{ $teacher->qualification }}</span>
-                                                </div>
-                                                <div class="detail-item">
-                                                    <span class="detail-label">اللغات</span>
-                                                    <div>
-                                                        @if (isset($teacher->languages) && (is_array($teacher->languages) || is_object($teacher->languages)))
-                                                            @foreach ($teacher->languages as $lang)
-                                                                <span class="tag-badge">{{ $lang }}</span>
-                                                            @endforeach
-                                                        @else
-                                                            <span class="text-muted small">لا يوجد</span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-12">
-                                                <h6 class="info-section-title">المسارات المختارة (التخصص)</h6>
-                                                <div class="mb-3">
-                                                    @foreach ($teacher->tracks as $track)
-                                                        <span class="track-badge">
-                                                            <i class="fa-solid fa-check-circle me-1"></i> {{ $track->name }}
-                                                        </span>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-12">
-                                                <h6 class="info-section-title">الخبرة والقدرات التقنية</h6>
-                                                <div class="row bg-light p-3 rounded-3 mx-0 border">
-                                                    <div class="col-6 col-md-3 mb-3 mb-md-0 text-center border-end">
-                                                        <span class="detail-label">سنوات الخبرة</span>
-                                                        <h5 class="fw-bold text-primary m-0">{{ $teacher->experience_years }} سنوات</h5>
-                                                    </div>
-                                                    <div class="col-6 col-md-3 mb-3 mb-md-0 text-center border-end-md">
-                                                        <span class="detail-label">ساعات العمل</span>
-                                                        <h5 class="fw-bold text-success m-0">{{ $teacher->work_hours }} ساعات</h5>
-                                                    </div>
-                                                    <div class="col-6 col-md-3 text-center border-end">
-                                                        <span class="detail-label">رصيد الدقائق</span>
-                                                        <h5 class="fw-bold text-warning m-0">{{ optional($teacher->profile)->minutes ?? 0 }} دقيقة</h5>
-                                                    </div>
-                                                    <div class="col-6 col-md-3 text-center">
-                                                        <span class="detail-label">جودة الإنترنت</span>
-                                                        <span class="badge bg-success bg-opacity-10 text-success mt-1">{{ $teacher->internet_quality }}</span>
-                                                    </div>
-                                                </div>
-                                                <div class="mt-3 px-2">
-                                                    <span class="detail-label d-inline">المهارات التقنية:</span>
-                                                    <span class="fw-bold text-dark">{{ $teacher->tech_skills }}</span>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-12">
-                                                <h6 class="info-section-title">المرفقات والإجازات</h6>
-                                                <div class="mb-3">
-                                                    <span class="detail-label">نص الإجازات:</span>
-                                                    <p class="detail-val bg-white p-3 rounded border text-muted small" style="line-height: 1.6; max-height: 100px; overflow-y: auto;">
-                                                        {{ $teacher->ijazas_text ?? 'لا يوجد نص مكتوب' }}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <span class="detail-label">السيرة الذاتية والشهادات:</span>
-                                                    @if ($teacher->cv_pdf_path)
-                                                        <a href="{{ asset('storage/' . $teacher->cv_pdf_path) }}" target="_blank" class="btn btn-outline-primary btn-sm w-100 text-start">
-                                                            <i class="fa-solid fa-file-pdf me-2"></i> عرض ملف الـ CV والشهادات (PDF)
-                                                        </a>
-                                                    @else
-                                                        <div class="alert alert-warning py-2 small"><i class="fa-solid fa-triangle-exclamation me-1"></i> لا يوجد ملف مرفق</div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="modal-footer bg-light justify-content-between">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-
-                                @if ($teacher->status == 'pending')
-                                    <div class="d-flex gap-2">
-                                        <form action="{{ route('teacher.reject', $teacher->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-danger fw-bold" onclick="return confirm('هل أنت متأكد من رفض هذا الطلب؟')">
-                                                <i class="fa-solid fa-xmark me-1"></i> رفض
-                                            </button>
-                                        </form>
-
-                                        <button type="button" onclick="document.getElementById('approveForm{{ $teacher->id }}').submit();" class="btn btn-success fw-bold">
-                                            <i class="fa-solid fa-check me-1"></i> قبول وتفعيل
-                                        </button>
-                                    </div>
-                                @elseif($teacher->status == 'approved' || $teacher->status == 'not_active')
-                                    <button type="button" onclick="document.getElementById('updateForm{{ $teacher->id }}').submit();" class="btn btn-primary fw-bold">
-                                        <i class="fa-solid fa-save me-1"></i> حفظ التعديلات
-                                    </button>
-                                @endif
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                @if($teacher->tracks && $teacher->tracks->count() > 0)
-                <div class="modal fade" id="tracksModal{{ $teacher->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title fw-bold">المسارات المسجل بها</h5>
-                                <button type="button" class="btn-close m-0" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach($teacher->tracks as $track)
-                                        <span class="badge bg-primary px-3 py-2" style="font-size: 0.85rem;">{{ $track->name }}</span>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endif
-            @endforeach
         </div>
 
     </div>
