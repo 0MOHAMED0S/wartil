@@ -428,9 +428,11 @@
                                                     
                                                     <input type="password" name="password" class="form-control form-control-sm shadow-sm border-0" placeholder="كلمة المرور (للتفعيل)" required minlength="8" style="width: 160px;">
                                                     
-                                                    <div class="d-flex align-items-center gap-1 bg-white border px-2 py-1 rounded shadow-sm" style="font-size: 0.8rem;">
-                                                        <i class="fa-solid fa-camera text-muted" title="الصورة الشخصية"></i>
-                                                        <input type="file" name="profile_photo_path" accept="image/*" class="form-control form-control-sm border-0 shadow-none p-0" style="width: 130px; font-size: 0.75rem;" title="تغيير الصورة">
+                                                    <div class="position-relative">
+                                                        <input type="file" name="profile_photo_path" id="photoApprove{{ $teacher->id }}" accept="image/*" class="d-none" onchange="document.getElementById('photo-label-approve-{{ $teacher->id }}').innerText = this.files[0].name">
+                                                        <label for="photoApprove{{ $teacher->id }}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 shadow-sm m-0 bg-white" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; cursor: pointer; border-color: #dee2e6;">
+                                                            <i class="fa-solid fa-camera text-muted"></i> <span id="photo-label-approve-{{ $teacher->id }}" style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">إرفاق صورة</span>
+                                                        </label>
                                                     </div>
 
                                                     <button type="submit" class="btn btn-sm btn-success fw-bold px-3 shadow-sm">
