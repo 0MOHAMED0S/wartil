@@ -195,7 +195,7 @@
         {{-- Filter Form --}}
         <form action="{{ url()->current() }}" method="GET" id="searchFilterForm" class="d-flex flex-column flex-xl-row justify-content-between align-items-stretch align-items-xl-center mb-4 gap-3 bg-white p-2 p-md-3 rounded-4 shadow-sm border">
             <input type="hidden" name="status" id="statusInput" value="{{ request('status', 'all') }}">
-            <div class="d-flex flex-wrap flex-grow-1 gap-2" id="filterButtons">
+            <div class="d-flex flex-nowrap flex-grow-1 gap-2" id="filterButtons" style="overflow-x: auto; padding-bottom: 8px;">
                 <button type="button" class="filter-btn {{ request('status', 'all') == 'all' ? 'active' : '' }}" onclick="submitFilter('all')">الكل</button>
                 <button type="button" class="filter-btn {{ request('status') == 'pending' ? 'active' : '' }}" onclick="submitFilter('pending')">قيد المراجعة</button>
                 <button type="button" class="filter-btn {{ request('status') == 'approved' ? 'active' : '' }}" onclick="submitFilter('approved')">مقبول</button>
