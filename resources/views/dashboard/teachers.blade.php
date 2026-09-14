@@ -239,8 +239,8 @@
         {{-- Table --}}
         <div class="card table-card border-0 shadow-sm mb-5">
             <div class="card-body p-0">
-                <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                    <table class="table table-hover align-middle mb-0" id="teachersTable" style="background: #fff; width: 100%;">
+                <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <table class="table table-hover align-middle mb-0" id="teachersTable" style="background: #fff; width: 100%; min-width: 1100px;">
                         <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                             <tr>
                                 <th style="padding: 16px; font-weight: 700; color: #1e293b; text-align: right; border-bottom: none;">بيانات المعلم الأساسية</th>
