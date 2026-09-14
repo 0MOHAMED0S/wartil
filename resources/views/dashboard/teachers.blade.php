@@ -132,24 +132,6 @@
         <div>
             <h5 class="m-0 fw-bold fs-5">إدارة طلبات التسجيل</h5>
         </div>
-        <div class="d-flex align-items-center gap-2 gap-md-3 flex-wrap justify-content-end">
-            <div class="registration-control d-flex align-items-center bg-white border rounded-pill px-2 py-1 shadow-sm gap-2" style="font-size: 0.8rem;">
-                <span class="text-muted fw-bold d-none d-md-inline">حالة التسجيل:</span>
-                <form action="{{ route('settings.toggleRegistration') }}" method="POST" class="m-0 d-flex align-items-center">
-                    @csrf
-                    <div class="form-check form-switch m-0 d-flex align-items-center gap-1">
-                        @php
-                            $setting = \App\Models\Setting::first();
-                            $isOpen = optional($setting)->teacher_application_status === 'open';
-                        @endphp
-                        <input class="form-check-input" type="checkbox" name="teacher_application_status" id="registrationToggle" onchange="this.form.submit()" {{ $isOpen ? 'checked' : '' }}>
-                        <label class="status-text mb-0 {{ $isOpen ? 'text-success' : 'text-danger' }} fw-bold" for="registrationToggle" style="cursor: pointer; padding-right: 5px;">
-                            {{ $isOpen ? 'مفتوح' : 'مغلق' }}
-                        </label>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 @endsection
 
@@ -226,14 +208,35 @@
             </div>
         </form>
 
-        {{-- أزرار التصدير --}}
-        <div class="d-flex justify-content-end gap-2 mb-3 mt-3">
-            <a href="{{ route('admin.teachers.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
-                <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
-            </a>
-            <a href="{{ route('admin.teachers.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm fw-bold">
-                <i class="fa-solid fa-file-pdf me-1"></i> تصدير (PDF)
-            </a>
+        {{-- Control Row: Registration Status & Export --}}
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-3 mb-3 mt-3">
+            {{-- Switch --}}
+            <div class="registration-control d-flex align-items-center justify-content-center justify-content-sm-start bg-white border rounded-pill px-3 py-2 shadow-sm gap-2" style="font-size: 0.9rem; width: fit-content;">
+                <span class="text-muted fw-bold">حالة التسجيل:</span>
+                <form action="{{ route('settings.toggleRegistration') }}" method="POST" class="m-0 d-flex align-items-center">
+                    @csrf
+                    <div class="form-check form-switch m-0 d-flex align-items-center gap-1">
+                        @php
+                            $setting = \App\Models\Setting::first();
+                            $isOpen = optional($setting)->teacher_application_status === 'open';
+                        @endphp
+                        <input class="form-check-input" type="checkbox" name="teacher_application_status" id="registrationToggle" onchange="this.form.submit()" {{ $isOpen ? 'checked' : '' }}>
+                        <label class="status-text mb-0 {{ $isOpen ? 'text-success' : 'text-danger' }} fw-bold" for="registrationToggle" style="cursor: pointer; padding-right: 5px;">
+                            {{ $isOpen ? 'مفتوح' : 'مغلق' }}
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+            {{-- أزرار التصدير --}}
+            <div class="d-flex flex-wrap justify-content-end gap-2">
+                <a href="{{ route('admin.teachers.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold flex-grow-1 flex-sm-grow-0 text-center shadow-sm d-flex align-items-center justify-content-center gap-1">
+                    <i class="fa-solid fa-file-csv"></i> تصدير (CSV)
+                </a>
+                <a href="{{ route('admin.teachers.export.pdf', request()->query()) }}" class="btn btn-outline-danger btn-sm fw-bold flex-grow-1 flex-sm-grow-0 text-center shadow-sm d-flex align-items-center justify-content-center gap-1">
+                    <i class="fa-solid fa-file-pdf"></i> تصدير (PDF)
+                </a>
+            </div>
         </div>
 
         {{-- Table --}}
