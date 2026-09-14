@@ -6,7 +6,7 @@
     <style>
         body {
             font-family: 'cairo', sans-serif;
-            font-size: 12px;
+            font-size: 10px;
             color: #333;
         }
         h2 {
@@ -23,8 +23,9 @@
             border: 1px solid #dddddd;
         }
         th, td {
-            padding: 8px;
+            padding: 4px 6px;
             text-align: right;
+            vertical-align: top;
         }
         th {
             background-color: #f2f2f2;
@@ -48,18 +49,15 @@
     <table>
         <thead>
             <tr>
-                <th>#</th>
-                <th>اسم المعلم</th>
-                <th>البريد الإلكتروني</th>
-                <th>رقم الهاتف</th>
-                <th>الجنسية</th>
-                <th>الإقامة</th>
-                <th>المؤهل</th>
-                <th>الفئة</th>
-                <th>الخبرة</th>
-                <th>اللغات</th>
+                <th>م</th>
+                <th>الاسم والاتصال</th>
+                <th>الإقامة والجنسية</th>
+                <th>المؤهلات والخبرات</th>
+                <th>المسارات واللغات</th>
+                <th>معلومات إضافية</th>
+                <th>تفاصيل الحساب</th>
                 <th>الحالة</th>
-                <th>تاريخ الانضمام</th>
+                <th>التاريخ</th>
             </tr>
         </thead>
         <tbody>
@@ -71,25 +69,45 @@
                 $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
                 $languagesStr = count($langs) > 0 ? implode('، ', $langs) : 'العربية';
                 $teacherCategory = optional(optional($teacher->profile)->category)->name ?? '-';
+                $tracks = $teacher->tracks && $teacher->tracks->count() > 0 ? $teacher->tracks->pluck('name')->implode('، ') : '-';
             @endphp
             <tr>
                 <td>{{ $index + 1 }}</td>
-                <td>{{ $userName }}</td>
-                <td>{{ $userEmail }}</td>
-                <td dir="ltr">{{ $teacher->phone }}</td>
-                <td>{{ $teacher->origin_country ?? 'غير محدد' }}</td>
-                <td>{{ $teacher->residence_location ?? 'غير محدد' }}</td>
-                <td>{{ $teacher->qualification ?? '-' }}</td>
-                <td>{{ $teacherCategory }}</td>
-                <td>{{ $teacher->experience_years ? $teacher->experience_years . ' سنوات' : '-' }}</td>
-                <td>{{ $languagesStr }}</td>
+                <td>
+                    <b>{{ $userName }}</b><br>
+                    <span style="color: #666; font-size: 9px;">{{ $userEmail }}</span><br>
+                    <span dir="ltr" style="font-size: 9px;">{{ $teacher->phone }}</span>
+                </td>
+                <td>
+                    <b>ج:</b> {{ $teacher->origin_country ?? '-' }}<br>
+                    <b>إ:</b> {{ $teacher->residence_location ?? '-' }}
+                </td>
+                <td>
+                    <b>المؤهل:</b> {{ $teacher->qualification ?? '-' }}<br>
+                    <b>الخبرة:</b> {{ $teacher->experience_years ? $teacher->experience_years . ' سنوات' : '-' }}<br>
+                    <b>الإجازات:</b> {{ $teacher->ijazas_text ? \Illuminate\Support\Str::limit($teacher->ijazas_text, 30) : '-' }}
+                </td>
+                <td>
+                    <b>المسارات:</b> {{ $tracks }}<br>
+                    <b>اللغات:</b> {{ $languagesStr }}
+                </td>
+                <td>
+                    <b>عمل:</b> {{ $teacher->work_hours ?? 0 }} س/يوم<br>
+                    <b>نت:</b> {{ $teacher->internet_quality ?? '-' }}<br>
+                    <b>تقنية:</b> {{ $teacher->tech_skills ?? '-' }}
+                </td>
+                <td>
+                    <b>الفئة:</b> {{ $teacherCategory }}<br>
+                    <b>الراتب:</b> {{ optional($teacher->profile)->salary ?? 0 }}<br>
+                    <b>الدقائق:</b> {{ optional($teacher->profile)->minutes ?? 0 }}
+                </td>
                 <td>
                     @if($teacher->status == 'approved')
                         <span class="text-success">مقبول</span>
                     @elseif($teacher->status == 'pending')
-                        <span class="text-warning">قيد المراجعة</span>
+                        <span class="text-warning">مراجعة</span>
                     @else
-                        <span class="text-danger">مرفوض</span>
+                        <span class="text-danger">مرفوض/معطل</span>
                     @endif
                 </td>
                 <td>{{ $teacher->created_at->format('Y-m-d') }}</td>
