@@ -11,7 +11,7 @@
         .pricing-card-icon { color: #10b981; font-size: 1.3rem; }
         
         /* Premium Table Grid */
-        .premium-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .premium-table { width: 100%; min-width: 700px; border-collapse: separate; border-spacing: 0; }
         .premium-table th { padding: 18px 25px; font-weight: 700; color: #475569; font-size: 0.95rem; text-align: center; border-bottom: 2px solid #f1f5f9; background: #fafafa; }
         .premium-table th:first-child { text-align: right; }
         
@@ -53,12 +53,7 @@
 @endsection
 
 @section('title')
-    <div class="d-flex justify-content-between align-items-center w-100">
-        <h5 class="m-0 fw-bold fs-5 text-dark">إدارة فئات المعلمين</h5>
-        <button class="btn btn-premium fw-bold px-4 rounded-pill shadow-sm py-1" style="font-size:0.9rem;" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-            <i class="fa-solid fa-plus me-1"></i> إضافة فئة
-        </button>
-    </div>
+    <h5 class="m-0 fw-bold fs-5 text-dark">إدارة فئات المعلمين</h5>
 @endsection
 
 @section('content')
@@ -80,11 +75,14 @@
     @endif
 
     <div class="pricing-card">
-        <div class="pricing-card-header">
-            <h5 class="pricing-card-title">
+        <div class="pricing-card-header d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+            <h5 class="pricing-card-title m-0">
                 <i class="fa-solid fa-globe pricing-card-icon"></i> 
                 تسعير الفئات حسب الدولة
             </h5>
+            <button class="btn btn-premium fw-bold px-4 rounded-pill shadow-sm py-2 w-100 w-sm-auto text-center" style="max-width: 200px;" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="fa-solid fa-plus me-1"></i> إضافة فئة
+            </button>
         </div>
         
         <div class="table-responsive">
