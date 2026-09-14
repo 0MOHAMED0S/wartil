@@ -530,11 +530,11 @@
 @endsection
 
 @section('title')
-    <div class="d-flex justify-content-between align-items-center w-100">
+    <div class="d-flex justify-content-between align-items-center w-100 gap-2 flex-wrap">
         <div>
-            <h5 class="m-0 fw-bold fs-5">إدارة الطلاب</h5>
+            <h5 class="m-0 fw-bold fs-5 mb-1 mb-md-0">إدارة الطلاب</h5>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
             <a href="{{ route('admin.students.export', request()->query()) }}" class="btn btn-outline-success btn-sm fw-bold">
                 <i class="fa-solid fa-file-csv me-1"></i> تصدير (CSV)
             </a>
