@@ -411,68 +411,91 @@
                                 {{-- Row 2: Expanded Edit/Approve Form --}}
                                 <tr style="border-bottom: 3px solid #e2e8f0; background: #fafafa;">
                                     <td colspan="5" style="padding: 12px 16px; border-top: 1px dashed #e2e8f0;">
-                                        <div class="d-flex flex-column flex-xl-row align-items-start align-items-xl-center gap-3">
-                                            <span class="fw-bold text-muted small" style="white-space: nowrap;"><i class="fa-solid fa-gears me-1"></i> إدارة الحساب:</span>
+                                        <div class="d-flex flex-column flex-xl-row align-items-center gap-2 w-100">
+                                            <div class="d-flex align-items-center gap-2 me-xl-4 mb-2 mb-xl-0">
+                                                <i class="fa-solid fa-gears text-muted"></i>
+                                                <span class="fw-bold text-muted small" style="white-space: nowrap;">إدارة الحساب:</span>
+                                            </div>
                                             
                                             @if ($teacher->status == 'pending')
                                                 <form action="{{ route('teacher.approve', $teacher->id) }}" method="POST" id="approveForm{{ $teacher->id }}" class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 mb-0" enctype="multipart/form-data">
                                                     @csrf
-                                                    <input type="email" name="email" class="form-control form-control-sm shadow-sm border-0" value="{{ $teacher->email }}" required style="width: 200px;" placeholder="البريد الإلكتروني">
-                                                    
-                                                    <select name="category_id" class="form-select form-select-sm fw-bold shadow-sm border-0" required style="width: 160px;">
-                                                        <option value="">-- اختر الفئة --</option>
-                                                        @foreach($categories as $category)
-                                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    
-                                                    <input type="password" name="password" class="form-control form-control-sm shadow-sm border-0" placeholder="كلمة المرور (للتفعيل)" required minlength="8" style="width: 160px;">
-                                                    
-                                                    <div class="position-relative">
-                                                        <input type="file" name="profile_photo_path" id="photoApprove{{ $teacher->id }}" accept="image/*" class="d-none" onchange="document.getElementById('photo-label-approve-{{ $teacher->id }}').innerText = this.files[0].name">
-                                                        <label for="photoApprove{{ $teacher->id }}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 shadow-sm m-0 bg-white" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; cursor: pointer; border-color: #dee2e6;">
-                                                            <i class="fa-solid fa-camera text-muted"></i> <span id="photo-label-approve-{{ $teacher->id }}" style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">إرفاق صورة</span>
-                                                        </label>
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 220px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-envelope"></i></span>
+                                                        <input type="email" name="email" class="form-control border-start-0" value="{{ $teacher->email }}" required placeholder="البريد الإلكتروني">
                                                     </div>
-
-                                                    <button type="submit" class="btn btn-sm btn-success fw-bold px-3 shadow-sm">
-                                                        <i class="fa-solid fa-check me-1"></i> قبول وتفعيل
-                                                    </button>
+                                                    
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 180px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-layer-group"></i></span>
+                                                        <select name="category_id" class="form-select border-start-0 fw-bold" required>
+                                                            <option value="">-- اختر الفئة --</option>
+                                                            @foreach($categories as $category)
+                                                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 180px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-lock"></i></span>
+                                                        <input type="password" name="password" class="form-control border-start-0" placeholder="كلمة المرور (للتفعيل)" required minlength="8">
+                                                    </div>
                                                 </form>
                                                 
-                                                <form action="{{ route('teacher.reject', $teacher->id) }}" method="POST" class="m-0">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold px-3 shadow-sm" onclick="return confirm('هل أنت متأكد من رفض هذا الطلب؟')">
-                                                        <i class="fa-solid fa-xmark me-1"></i> رفض
+                                                <div class="d-flex align-items-center gap-2 ms-xl-auto mt-2 mt-xl-0">
+                                                    <button type="submit" form="approveForm{{ $teacher->id }}" class="btn btn-sm btn-success fw-bold px-3 shadow-sm rounded-3">
+                                                        <i class="fa-solid fa-check me-1"></i> قبول وتفعيل
                                                     </button>
-                                                </form>
+                                                    <form action="{{ route('teacher.reject', $teacher->id) }}" method="POST" class="m-0">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold px-3 shadow-sm rounded-3" onclick="return confirm('هل أنت متأكد من رفض هذا الطلب؟')">
+                                                            <i class="fa-solid fa-xmark me-1"></i> رفض
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             
                                             @elseif($teacher->status == 'approved' || $teacher->status == 'not_active')
                                                 <form action="{{ route('teacher.updateDetails', $teacher->id) }}" method="POST" id="updateForm{{ $teacher->id }}" class="d-flex flex-wrap align-items-center gap-2 flex-grow-1 mb-0" enctype="multipart/form-data">
                                                     @csrf
-                                                    <input type="text" name="name" class="form-control form-control-sm shadow-sm border-0" value="{{ $userName }}" required style="width: 180px;" placeholder="الاسم">
-                                                    <input type="email" name="email" class="form-control form-control-sm shadow-sm border-0" value="{{ $userEmail }}" required style="width: 180px;" placeholder="البريد الإلكتروني">
-                                                    
-                                                    <select name="status" class="form-select form-select-sm fw-bold shadow-sm border-0 {{ $teacher->status == 'approved' ? 'text-success' : 'text-secondary' }}" style="width: 140px;">
-                                                        <option value="approved" {{ $teacher->status == 'approved' ? 'selected' : '' }}>نشط (مقبول)</option>
-                                                        <option value="not_active" {{ $teacher->status == 'not_active' ? 'selected' : '' }}>غير مفعل</option>
-                                                    </select>
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 180px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-user"></i></span>
+                                                        <input type="text" name="name" class="form-control border-start-0" value="{{ $userName }}" required placeholder="الاسم">
+                                                    </div>
 
-                                                    <select name="category_id" class="form-select form-select-sm fw-bold shadow-sm border-0" required style="width: 140px;">
-                                                        <option value="" disabled>-- اختر الفئة --</option>
-                                                        @foreach($categories as $category)
-                                                            <option value="{{ $category->id }}" {{ (optional($teacher->profile)->category_id == $category->id) ? 'selected' : '' }}>
-                                                                {{ $category->name }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-
-                                                    <input type="password" name="password" class="form-control form-control-sm shadow-sm border-0" placeholder="تغيير المرور..." minlength="8" style="width: 130px;">
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 200px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-envelope"></i></span>
+                                                        <input type="email" name="email" class="form-control border-start-0" value="{{ $userEmail }}" required placeholder="البريد الإلكتروني">
+                                                    </div>
                                                     
-                                                    <button type="submit" class="btn btn-sm btn-primary fw-bold px-3 shadow-sm">
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 150px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-signal"></i></span>
+                                                        <select name="status" class="form-select border-start-0 fw-bold {{ $teacher->status == 'approved' ? 'text-success' : 'text-secondary' }}">
+                                                            <option value="approved" {{ $teacher->status == 'approved' ? 'selected' : '' }}>نشط (مقبول)</option>
+                                                            <option value="not_active" {{ $teacher->status == 'not_active' ? 'selected' : '' }}>غير مفعل</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 150px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-layer-group"></i></span>
+                                                        <select name="category_id" class="form-select border-start-0 fw-bold" required>
+                                                            <option value="" disabled>-- اختر الفئة --</option>
+                                                            @foreach($categories as $category)
+                                                                <option value="{{ $category->id }}" {{ (optional($teacher->profile)->category_id == $category->id) ? 'selected' : '' }}>
+                                                                    {{ $category->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="input-group input-group-sm shadow-sm" style="max-width: 150px; flex: 1 1 auto;">
+                                                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-lock"></i></span>
+                                                        <input type="password" name="password" class="form-control border-start-0" placeholder="تغيير المرور..." minlength="8">
+                                                    </div>
+                                                </form>
+                                                <div class="ms-xl-auto mt-2 mt-xl-0">
+                                                    <button type="submit" form="updateForm{{ $teacher->id }}" class="btn btn-sm btn-primary fw-bold px-4 shadow-sm rounded-3">
                                                         <i class="fa-solid fa-save me-1"></i> حفظ
                                                     </button>
-                                                </form>
+                                                </div>
                                             @endif
                                         </div>
                                     </td>
