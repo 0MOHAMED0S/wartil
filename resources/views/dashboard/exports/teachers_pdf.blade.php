@@ -98,7 +98,6 @@
                 </td>
                 <td>
                     <b>الفئة:</b> {{ $teacherCategory }}<br>
-                    <b>الراتب:</b> {{ optional($teacher->profile)->salary ?? 0 }}<br>
                     <b>الدقائق:</b> {{ optional($teacher->profile)->minutes ?? 0 }}
                 </td>
                 <td>

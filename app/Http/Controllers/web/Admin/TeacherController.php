@@ -262,7 +262,6 @@ public function index(Request $request)
             'فئة المعلم (Category)', 
             'الرصيد المالي (Financial Balance)', 
             'رصيد الدقائق (Minutes)', 
-            'الراتب المتفق عليه (Agreed Salary)', 
             'الحالة (Status)', 
             'تاريخ الطلب/الانضمام (Join Date)'
         ];
@@ -311,7 +310,6 @@ public function index(Request $request)
                     optional(optional($app->profile)->category)->name ?? 'بدون فئة',
                     optional($app->profile)->balance ?? 0,
                     optional($app->profile)->minutes ?? 0,
-                    optional($app->profile)->salary ?? 0,
                     $status,
                     $app->created_at ? $app->created_at->format('Y-m-d') : ''
                 ]);
