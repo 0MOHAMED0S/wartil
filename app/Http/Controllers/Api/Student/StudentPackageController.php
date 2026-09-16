@@ -114,7 +114,11 @@ class StudentPackageController extends Controller
             $country = $user->country;
             $rate = $country?->rate_to_usd ?? 1;
 
-            $query = $user->packages()->with('package')->latest();
+            $ownerId = $user->accountOwner()->id;
+            $userIds = array_unique([$user->id, $ownerId]);
+            $query = \App\Models\UserPackage::whereIn('user_id', $userIds)
+                ->orderByRaw("CASE WHEN user_id = {$user->id} THEN 1 ELSE 2 END")
+                ->with('package')->latest();
             $allUserPackages = $query->get();
 
             $totalRemainingMinutes = $allUserPackages->sum('remaining_minutes');

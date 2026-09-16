@@ -16,16 +16,29 @@ class StudentWalletController extends Controller
     public function getTransactions(Request $request)
     {
         $userId = auth()->id();
-        $calls = CallSession::where('student_id', $userId)
+        $ownerId = auth()->user()->accountOwner()->id;
+        
+        // Include the user and their dependents (if they have any)
+        $userIds = \App\Models\User::where('id', $ownerId)
+            ->orWhere('parent_id', $ownerId)
+            ->pluck('id')
+            ->toArray();
+            
+        // If the current user is a dependent, only show their own calls/refunds, otherwise show all
+        $targetIds = auth()->user()->parent_id ? [$userId] : $userIds;
+
+        $calls = CallSession::whereIn('student_id', $targetIds)
             ->where('status', 'ended')
-            ->select('id', 'duration_minutes as minutes', 'started_at as date')
+            ->with('student:id,name')
+            ->select('id', 'student_id', 'duration_minutes as minutes', 'started_at as date')
             ->get();
-        $refunds = SlotBooking::where('user_id', $userId)
+        $refunds = SlotBooking::whereIn('user_id', $targetIds)
             ->where('status', 'cancelled')
+            ->with('user:id,name')
             ->where('deducted_minutes', '>', 0)
-            ->select('id', 'deducted_minutes as minutes', 'updated_at as date')
+            ->select('id', 'user_id', 'deducted_minutes as minutes', 'updated_at as date')
             ->get();
-        $additions = UserPackage::where('user_id', $userId)
+        $additions = UserPackage::where('user_id', $ownerId)
             ->with('package:id,name,base_minutes,bonus_minutes')
             ->select('id', 'package_id', 'created_at as date')
             ->get();
@@ -36,11 +49,19 @@ class StudentWalletController extends Controller
             ->get();
         $transactions = collect();
         foreach ($calls as $call) {
-            $transactions->push($this->mapTransaction($call, 'out', 'جلسة تعليمية مباشرة', 'استهلاك رصيد دقائق', 'call'));
+            $subtitle = 'استهلاك رصيد دقائق';
+            if ($call->student_id != $userId && $call->student) {
+                $subtitle .= ' (التابع: ' . $call->student->name . ')';
+            }
+            $transactions->push($this->mapTransaction($call, 'out', 'جلسة تعليمية مباشرة', $subtitle, 'call'));
         }
 
         foreach ($refunds as $refund) {
-            $transactions->push($this->mapTransaction($refund, 'in', 'مستردات حجز ملغي', 'تمت إعادة الدقائق لمحفظتك', 'refund'));
+            $subtitle = 'تمت إعادة الدقائق لمحفظتك';
+            if ($refund->user_id != $userId && $refund->user) {
+                $subtitle .= ' (التابع: ' . $refund->user->name . ')';
+            }
+            $transactions->push($this->mapTransaction($refund, 'in', 'مستردات حجز ملغي', $subtitle, 'refund'));
         }
 
         foreach ($additions as $addition) {
@@ -78,9 +99,12 @@ class StudentWalletController extends Controller
     public function getWalletSummary()
     {
         $userId = auth()->id();
+        $ownerId = auth()->user()->accountOwner()->id;
         $now = Carbon::now();
+        $userIds = array_unique([$userId, $ownerId]);
+        
         $activePackages = UserPackage::with('package:id,name,base_minutes,bonus_minutes')
-            ->where('user_id', $userId)
+            ->whereIn('user_id', $userIds)
             ->whereIn('status', ['active', 'Active'])
             ->where(function ($q) use ($now) {
                 $q->where('expires_at', '>', $now)
@@ -92,7 +116,7 @@ class StudentWalletController extends Controller
             $pkgTotal = ($up->package->base_minutes ?? 0) + ($up->package->bonus_minutes ?? 0);
             return max($pkgTotal, $up->remaining_minutes);
         });
-        $expiredMinutes = UserPackage::where('user_id', $userId)
+        $expiredMinutes = UserPackage::whereIn('user_id', $userIds)
             ->where(function ($q) use ($now) {
                 $q->where('status', 'expired')
                     ->orWhere('expires_at', '<=', $now);
@@ -105,7 +129,8 @@ class StudentWalletController extends Controller
         $learningHours = floor($totalUsedMinutes / 60);
         $learningMinutesRemaining = $totalUsedMinutes % 60;
         $myPackages = UserPackage::with('package:id,name,base_minutes,bonus_minutes')
-            ->where('user_id', $userId)
+            ->whereIn('user_id', $userIds)
+            ->orderByRaw("CASE WHEN user_id = {$userId} THEN 1 ELSE 2 END")
             ->latest()
             ->get()
             ->map(function ($up) use ($now) {

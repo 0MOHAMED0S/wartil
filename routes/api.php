@@ -139,6 +139,13 @@ Route::prefix('student')->middleware('throttle:60,1')->group(function () {
         Route::get('/profile', [StudentAuthController::class, 'getProfile']);
         Route::post('/change-password', [StudentAuthController::class, 'ChangePassword']);
 
+        // Dependents routes
+        Route::get('/dependents', [\App\Http\Controllers\Api\Student\DependentController::class, 'index']);
+        Route::post('/dependents/send-otp', [\App\Http\Controllers\Api\Student\DependentController::class, 'sendOtp']);
+        Route::post('/dependents/check-otp', [\App\Http\Controllers\Api\Student\DependentController::class, 'checkOtp']);
+        Route::post('/dependents', [\App\Http\Controllers\Api\Student\DependentController::class, 'store']);
+        Route::get('/dependents/{id}', [\App\Http\Controllers\Api\Student\DependentController::class, 'show']);
+
         // Logout
         Route::post('/logout', [StudentAuthController::class, 'logout']);
 

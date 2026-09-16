@@ -24,13 +24,18 @@ class PrivateCallController extends Controller
     }
     private function getActivePackages($userId, $lockForUpdate = false)
     {
-        $query = UserPackage::where('user_id', $userId)
+        $ownerId = \App\Models\User::find($userId)?->accountOwner()->id ?? $userId;
+        $userIds = array_unique([$userId, $ownerId]);
+        
+        $query = UserPackage::whereIn('user_id', $userIds)
             ->where('status', 'active')
             ->where('remaining_minutes', '>', 0)
             ->where(function ($q) {
                 $q->where('expires_at', '>', now())
                     ->orWhereNull('expires_at');
             })
+            // Prioritize dependent's own packages, then the parent's
+            ->orderByRaw("CASE WHEN user_id = {$userId} THEN 1 ELSE 2 END")
             ->orderByRaw('expires_at IS NULL ASC, expires_at ASC');
 
         if ($lockForUpdate) {
@@ -41,7 +46,10 @@ class PrivateCallController extends Controller
     }
     private function calculateTotalMinutes($userId)
     {
-        return UserPackage::where('user_id', $userId)
+        $ownerId = \App\Models\User::find($userId)?->accountOwner()->id ?? $userId;
+        $userIds = array_unique([$userId, $ownerId]);
+        
+        return UserPackage::whereIn('user_id', $userIds)
             ->whereIn('status', ['active', 'Active'])
             ->where('remaining_minutes', '>', 0)
             ->where(function ($q) {

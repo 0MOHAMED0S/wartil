@@ -347,6 +347,8 @@ class StudentAuthController extends Controller
                     'user'    => $user,
                     'profile' => $profile,
                     'token'   => $token,
+                    'is_dependent' => !is_null($user->parent_id),
+                    'parent_id' => $user->parent_id,
                 ]
             ], 200);
         } catch (\Throwable $e) {
@@ -497,10 +499,26 @@ class StudentAuthController extends Controller
                 $sessionsCount = 0;
             }
 
+            $availableMinutes = 0;
+            if ($user->accountOwner()) {
+                $ownerId = $user->accountOwner()->id;
+                $userIds = array_unique([$user->id, $ownerId]);
+                $now = Carbon::now();
+                $availableMinutes = (int) \App\Models\UserPackage::whereIn('user_id', $userIds)
+                    ->whereIn('status', ['active', 'Active'])
+                    ->where('remaining_minutes', '>', 0)
+                    ->where(function ($q) use ($now) {
+                        $q->where('expires_at', '>', $now)
+                            ->orWhereNull('expires_at');
+                    })
+                    ->sum('remaining_minutes');
+            }
+
             $user->statistics = [
                 'calls_count'    => $callsCount,
                 'slots_count'    => $slotsCount,
                 'sessions_count' => $sessionsCount,
+                'available_minutes' => $availableMinutes,
                 'learning_stats' => [
                     'total_minutes' => $totalMinutes,
                     'hours'         => $learningHours,
@@ -509,6 +527,8 @@ class StudentAuthController extends Controller
                 ]
             ];
 
+            $user->is_dependent = !is_null($user->parent_id);
+            
             return response()->json([
                 'status' => true,
                 'data'   => $user

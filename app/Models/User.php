@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'role',
         'privacy_agree',
+        'parent_id',
     ];
 
     /**
@@ -69,6 +70,21 @@ class User extends Authenticatable
     public function packages()
     {
         return $this->hasMany(UserPackage::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(User::class, 'parent_id');
+    }
+
+    public function dependents()
+    {
+        return $this->hasMany(User::class, 'parent_id');
+    }
+
+    public function accountOwner()
+    {
+        return $this->parent_id ? User::find($this->parent_id) : $this;
     }
 
     public function student()

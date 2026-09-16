@@ -296,10 +296,14 @@ class StudentTeacherController extends Controller
 
             $duration = $slotStart->diffInMinutes($slotEnd);
 
-            $activePackages = UserPackage::where('user_id', $user->id)
+            $ownerId = $user->accountOwner()->id;
+            $userIds = array_unique([$user->id, $ownerId]);
+            
+            $activePackages = UserPackage::whereIn('user_id', $userIds)
                 ->whereIn('status', ['active', 'Active'])
                 ->where('remaining_minutes', '>', 0)
                 ->where(fn($q) => $q->where('expires_at', '>', now())->orWhereNull('expires_at'))
+                ->orderByRaw("CASE WHEN user_id = {$user->id} THEN 1 ELSE 2 END")
                 ->orderByRaw('expires_at IS NULL ASC, expires_at ASC')
                 ->lockForUpdate()
                 ->get();
@@ -418,15 +422,23 @@ class StudentTeacherController extends Controller
 
             $refundMinutes = $booking->deducted_minutes;
             if ($refundMinutes > 0) {
-                $packageToRefund = UserPackage::where('user_id', $studentId)
-                    ->where('status', 'active')
-                    ->orderBy('expires_at', 'desc')
+                $studentUser = \App\Models\User::find($studentId);
+                $ownerId = $studentUser ? $studentUser->accountOwner()->id : $studentId;
+                $userIds = array_unique([$studentId, $ownerId]);
+
+                $packageToRefund = UserPackage::whereIn('user_id', $userIds)
+                    ->whereIn('status', ['active', 'Active'])
+                    ->orderByRaw("CASE WHEN user_id = {$studentId} THEN 1 ELSE 2 END")
+                    ->orderBy('id', 'desc')
                     ->first();
 
                 if ($packageToRefund) {
                     $packageToRefund->increment('remaining_minutes', $refundMinutes);
                 } else {
-                    $lastPackage = UserPackage::where('user_id', $studentId)->latest()->first();
+                    $lastPackage = UserPackage::whereIn('user_id', $userIds)
+                        ->orderByRaw("CASE WHEN user_id = {$studentId} THEN 1 ELSE 2 END")
+                        ->latest()
+                        ->first();
                     if ($lastPackage) {
                         $lastPackage->update([
                             'remaining_minutes' => $lastPackage->remaining_minutes + $refundMinutes,
