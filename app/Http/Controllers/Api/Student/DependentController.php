@@ -24,21 +24,14 @@ class DependentController extends Controller
             'email.unique' => 'البريد الإلكتروني هذا مستخدم بالفعل.',
         ]);
 
-        $parent = $request->user();
-
-        if (!$parent->email) {
-            return response()->json([
-                'status' => false,
-                'message' => 'البريد الإلكتروني لولي الأمر غير متوفر.',
-            ], 400);
-        }
+        $email = $request->email;
 
         try {
             // Generate 4-digit OTP
             $otp = rand(1000, 9999);
 
             \App\Models\OtpCode::updateOrCreate(
-                ['email' => $parent->email],
+                ['email' => $email],
                 [
                     'otp' => (string) $otp,
                     'expires_at' => Carbon::now()->addMinutes(10),
@@ -46,7 +39,7 @@ class DependentController extends Controller
                 ]
             );
 
-            \Illuminate\Support\Facades\Mail::to($parent->email)->send(new \App\Mail\OtpMail($otp));
+            \Illuminate\Support\Facades\Mail::to($email)->send(new \App\Mail\OtpMail($otp));
 
             return response()->json([
                 'status' => true,
@@ -55,7 +48,7 @@ class DependentController extends Controller
 
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Dependent Send OTP Error', [
-                'email' => $parent->email,
+                'email' => $email,
                 'error' => $e->getMessage()
             ]);
 
@@ -72,12 +65,11 @@ class DependentController extends Controller
     public function checkOtp(Request $request)
     {
         $request->validate([
+            'email' => 'required|email',
             'otp' => 'required|string',
         ]);
 
-        $parent = $request->user();
-
-        $otpRecord = \App\Models\OtpCode::where('email', $parent->email)
+        $otpRecord = \App\Models\OtpCode::where('email', $request->email)
             ->where('otp', $request->otp)
             ->where('expires_at', '>', Carbon::now())
             ->first();
@@ -215,8 +207,8 @@ class DependentController extends Controller
 
         $parent = $request->user();
 
-        // Check if parent's email has been verified via OTP
-        $otpRecord = \App\Models\OtpCode::where('email', $parent->email)
+        // Check if dependent's email has been verified via OTP
+        $otpRecord = \App\Models\OtpCode::where('email', $request->email)
             ->where('is_verified', true)
             ->first();
 
