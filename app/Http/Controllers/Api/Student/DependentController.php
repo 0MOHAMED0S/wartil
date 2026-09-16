@@ -18,6 +18,12 @@ class DependentController extends Controller
      */
     public function sendOtp(Request $request)
     {
+        $request->validate([
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        ], [
+            'email.unique' => 'البريد الإلكتروني هذا مستخدم بالفعل.',
+        ]);
+
         $parent = $request->user();
 
         if (!$parent->email) {
