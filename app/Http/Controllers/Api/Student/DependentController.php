@@ -229,8 +229,9 @@ class DependentController extends Controller
             'role' => 'student',
             'parent_id' => $parent->id,
             'privacy_agree' => true,
-            'email_verified_at' => Carbon::now(),
         ]);
+
+        $dependentUser->markEmailAsVerified();
 
         $countryId = $request->country_id;
         if (!$countryId) {
@@ -255,13 +256,14 @@ class DependentController extends Controller
             'profile_photo_path' => $photoPath,
         ]);
 
+        $dependentUser->load('student');
+
         return response()->json([
             'status' => true,
             'message' => 'تم إضافة التابع بنجاح',
             'data' => [
-                'id' => $dependentUser->id,
-                'name' => $dependentUser->name,
-                'email' => $dependentUser->email,
+                'user' => $dependentUser,
+                'student_profile' => clone $dependentUser->student,
             ]
         ], 201);
     }
