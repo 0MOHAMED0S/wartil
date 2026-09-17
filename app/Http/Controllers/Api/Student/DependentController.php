@@ -115,20 +115,19 @@ class DependentController extends Controller
 
             // Next session
             $nextSession = \App\Models\SlotBooking::where('user_id', $dependent->id)
-                ->whereIn('status', ['confirmed', 'started'])
-                ->where('booking_date', '>=', Carbon::now()->toDateString())
-                ->orderBy('booking_date', 'asc')
-                ->orderBy('start_time', 'asc')
+                ->whereIn('status', ['scheduled', 'started', 'confirmed'])
+                ->where('started_at', '>=', Carbon::now())
+                ->orderBy('started_at', 'asc')
                 ->first();
 
             $nextSessionStr = null;
-            if ($nextSession) {
-                $sessionDate = Carbon::parse($nextSession->booking_date);
+            if ($nextSession && $nextSession->started_at) {
+                $sessionDate = Carbon::parse($nextSession->started_at);
                 $isToday = $sessionDate->isToday();
                 $isTomorrow = $sessionDate->isTomorrow();
                 
                 $dateStr = $isToday ? 'اليوم' : ($isTomorrow ? 'الغد' : $sessionDate->format('Y-m-d'));
-                $timeStr = Carbon::parse($nextSession->start_time)->format('h:i A');
+                $timeStr = $sessionDate->format('h:i A');
                 
                 $nextSessionStr = "الجلسة: {$dateStr}، {$timeStr}";
             }
