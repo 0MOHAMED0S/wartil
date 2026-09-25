@@ -146,6 +146,7 @@ class DependentController extends Controller
             return [
                 'id' => $dependent->id,
                 'name' => $dependent->name,
+                'email' => $dependent->email,
                 'age' => $student ? $student->age : null,
                 'track' => $student ? $student->reading_track : null,
                 'gender' => $student ? $student->gender : null,
@@ -158,6 +159,16 @@ class DependentController extends Controller
                 'dependent_available_minutes' => $dependentAvailableMinutes,
                 'has_reports' => $hasReports,
                 'profile_photo_path' => $student && $student->profile_photo_path ? asset('storage/' . $student->profile_photo_path) : null,
+                'phone' => $student ? $student->phone : null,
+                'address' => $student ? $student->address : null,
+                'qualification' => $student ? $student->qualification : null,
+                'professional_status' => $student ? $student->professional_status : null,
+                'birth_date' => $student ? $student->birth_date : null,
+                'preferred_teacher_language' => $student ? $student->preferred_teacher_language : null,
+                'memorized_amount' => $student ? $student->memorized_amount : null,
+                'teacher_response_speed' => $student ? $student->teacher_response_speed : null,
+                'country_id' => $student ? $student->country_id : null,
+                'country' => $student && $student->country ? $student->country : null,
             ];
         });
 
