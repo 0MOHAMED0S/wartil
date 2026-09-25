@@ -141,15 +141,22 @@ class DependentController extends Controller
                 })
                 ->sum('remaining_minutes');
 
+            $hasReports = \App\Models\TeacherReport::where('student_id', $dependent->id)->exists();
+
             return [
                 'id' => $dependent->id,
                 'name' => $dependent->name,
                 'age' => $student ? $student->age : null,
                 'track' => $student ? $student->reading_track : null,
+                'gender' => $student ? $student->gender : null,
+                'reading_level' => $student ? $student->reading_level : null,
+                'reading_type' => $student ? $student->reading_type : null,
+                'plan_name' => $student ? $student->plan_name : null,
                 'sessions_this_month' => $sessionsThisMonth,
                 'progress_percentage' => 0, // Placeholder for now
                 'next_session' => $nextSessionStr,
                 'dependent_available_minutes' => $dependentAvailableMinutes,
+                'has_reports' => $hasReports,
                 'profile_photo_path' => $student && $student->profile_photo_path ? asset('storage/' . $student->profile_photo_path) : null,
             ];
         });
