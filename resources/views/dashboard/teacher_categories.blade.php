@@ -155,7 +155,7 @@
 
                         <!-- Edit Modal -->
                         <div class="modal fade" id="editModal{{ $category->id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                                     <div class="modal-header bg-light border-0">
                                         <h5 class="modal-title fw-bold">
@@ -173,21 +173,21 @@
                                             </div>
                                             
                                             <div class="row g-3">
-                                                <div class="col-md-4">
+                                                <div class="col-12 col-md-4">
                                                     <label class="form-label fw-bold text-muted small">سعر مصري</label>
                                                     <div class="input-group">
                                                         <input type="number" name="egypt_rate" class="form-control custom-input border-end-0" step="0.01" min="0" value="{{ rtrim(rtrim(number_format($category->egypt_rate, 2, '.', ''), '0'), '.') }}" required>
                                                         <span class="input-group-text bg-light text-muted border-start-0" style="border-radius: 10px 0 0 10px; border-color: #e2e8f0; font-size:0.8rem;">ج.م</span>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-4">
+                                                <div class="col-12 col-md-4">
                                                     <label class="form-label fw-bold text-muted small">سعر عربي</label>
                                                     <div class="input-group">
                                                         <input type="number" name="arab_rate" class="form-control custom-input border-end-0" step="0.01" min="0" value="{{ rtrim(rtrim(number_format($category->arab_rate, 2, '.', ''), '0'), '.') }}" required>
                                                         <span class="input-group-text bg-light text-muted border-start-0" style="border-radius: 10px 0 0 10px; border-color: #e2e8f0; font-size:0.8rem;">ج.م</span>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-4">
+                                                <div class="col-12 col-md-4">
                                                     <label class="form-label fw-bold text-muted small">سعر غير عربي</label>
                                                     <div class="input-group">
                                                         <input type="number" name="foreign_rate" class="form-control custom-input border-end-0" step="0.01" min="0" value="{{ rtrim(rtrim(number_format($category->foreign_rate, 2, '.', ''), '0'), '.') }}" required>
@@ -243,7 +243,7 @@
 
 <!-- Add Modal -->
 <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
             <div class="modal-header bg-light border-0">
                 <h5 class="modal-title fw-bold">
@@ -260,21 +260,21 @@
                     </div>
                     
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <label class="form-label fw-bold text-muted small">سعر مصري</label>
                             <div class="input-group">
                                 <input type="number" name="egypt_rate" class="form-control custom-input border-end-0" step="0.01" min="0" placeholder="0.00" required>
                                 <span class="input-group-text bg-light text-muted border-start-0" style="border-radius: 10px 0 0 10px; border-color: #e2e8f0; font-size:0.8rem;">ج.م</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <label class="form-label fw-bold text-muted small">سعر عربي</label>
                             <div class="input-group">
                                 <input type="number" name="arab_rate" class="form-control custom-input border-end-0" step="0.01" min="0" placeholder="0.00" required>
                                 <span class="input-group-text bg-light text-muted border-start-0" style="border-radius: 10px 0 0 10px; border-color: #e2e8f0; font-size:0.8rem;">ج.م</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-4">
                             <label class="form-label fw-bold text-muted small">سعر غير عربي</label>
                             <div class="input-group">
                                 <input type="number" name="foreign_rate" class="form-control custom-input border-end-0" step="0.01" min="0" placeholder="0.00" required>
