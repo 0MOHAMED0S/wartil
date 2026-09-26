@@ -145,6 +145,9 @@ Route::prefix('student')->middleware('throttle:60,1')->group(function () {
         Route::post('/dependents/check-otp', [\App\Http\Controllers\Api\Student\DependentController::class, 'checkOtp']);
         Route::post('/dependents', [\App\Http\Controllers\Api\Student\DependentController::class, 'store']);
         Route::get('/dependents/{id}', [\App\Http\Controllers\Api\Student\DependentController::class, 'show']);
+        Route::post('/dependents/{id}', [\App\Http\Controllers\Api\Student\DependentController::class, 'update']);
+        Route::delete('/dependents/{id}', [\App\Http\Controllers\Api\Student\DependentController::class, 'detach']);
+
 
         // Logout
         Route::post('/logout', [StudentAuthController::class, 'logout']);

@@ -311,4 +311,131 @@ class DependentController extends Controller
             ]
         ], 200);
     }
+
+    /**
+     * Detach a dependent to make it a normal account.
+     */
+    public function detach($id)
+    {
+        $user = auth()->user();
+        
+        $dependent = User::where('id', $id)
+            ->where('parent_id', $user->id)
+            ->first();
+
+        if (!$dependent) {
+            return response()->json([
+                'status' => false,
+                'message' => 'التابع غير موجود أو غير مرتبط بحسابك'
+            ], 404);
+        }
+
+        $dependent->update([
+            'parent_id' => null
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم فصل التابع بنجاح، وأصبح حساباً مستقلاً'
+        ], 200);
+    }
+
+    /**
+     * Update dependent profile by parent.
+     */
+    public function update(\App\Http\Requests\Student\UpdateProfileRequest $request, $id)
+    {
+        $parent = $request->user();
+        
+        $dependent = User::where('id', $id)
+            ->where('parent_id', $parent->id)
+            ->first();
+
+        if (!$dependent) {
+            return response()->json([
+                'status' => false,
+                'message' => 'التابع غير موجود أو غير مرتبط بحسابك'
+            ], 404);
+        }
+
+        $student = $dependent->student;
+        if (!$student) {
+            return response()->json([
+                'status' => false,
+                'message' => 'الملف الشخصي للتابع غير موجود'
+            ], 404);
+        }
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        $oldPhotoPath = null;
+        $newPhotoPath = null;
+
+        try {
+            if ($request->filled('name')) {
+                $dependent->update(['name' => $request->name]);
+            }
+
+            $studentData = $request->only([
+                'phone',
+                'address',
+                'qualification',
+                'professional_status',
+                'country_id',
+                'gender',
+                'birth_date',
+                'reading_level',
+                'preferred_teacher_language',
+                'reading_track',
+                'memorized_amount',
+                'plan_name',
+                'reading_type',
+                'teacher_response_speed'
+            ]);
+
+            if ($request->hasFile('profile_photo_path')) {
+                $oldPhotoPath = $student->profile_photo_path;
+                $newPhotoPath = $request->file('profile_photo_path')->store('students/photos', 'public');
+                $studentData['profile_photo_path'] = $newPhotoPath;
+            }
+
+            $student->update($studentData);
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            if ($oldPhotoPath && $newPhotoPath) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPhotoPath);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم تحديث الملف الشخصي للتابع بنجاح.',
+                'data' => [
+                    'user' => $dependent->fresh(),
+                    'profile' => $student->fresh(),
+                    'photo_url' => $student->profile_photo_path
+                        ? asset('storage/' . $student->profile_photo_path)
+                        : null,
+                ]
+            ], 200);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+
+            if ($newPhotoPath) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($newPhotoPath);
+            }
+
+            \Illuminate\Support\Facades\Log::error('Update Dependent Profile Error', [
+                'dependent_id' => $dependent->id,
+                'parent_id' => $parent->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'فشل في تحديث الملف الشخصي للتابع. حاول مرة أخرى.'
+            ], 500);
+        }
+    }
 }
