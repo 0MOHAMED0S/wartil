@@ -100,6 +100,24 @@ class TeacherAuthController extends Controller
                 ], 403);
             }
 
+            $category = $user->teacherProfile->category;
+            $categoryData = $category ? $category->toArray() : null;
+
+            if ($categoryData) {
+                $teacherRate = $category->foreign_rate; // Default fallback
+                $originCountryCode = $user->teacherProfile->application?->origin_country;
+                if ($originCountryCode) {
+                    $country = \App\Models\Country::where('code', $originCountryCode)->first();
+                    $region = $country ? $country->region : 'foreign';
+                    if ($region === 'egypt') {
+                        $teacherRate = $category->egypt_rate;
+                    } elseif ($region === 'arab') {
+                        $teacherRate = $category->arab_rate;
+                    }
+                }
+                $categoryData['teacher_rate'] = $teacherRate;
+            }
+
             return response()->json([
                 'status' => true,
                 'message' => 'تم جلب البيانات بنجاح',
@@ -110,7 +128,7 @@ class TeacherAuthController extends Controller
                         'email' => $user->email,
                     ],
                     'profile' => $user->teacherProfile,
-                    'category' => $user->teacherProfile->category ?? null,
+                    'category' => $categoryData,
                     'tracks'  => $user->teacherProfile->application?->tracks ?? [],
                 ]
             ], 200);
