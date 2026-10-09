@@ -107,8 +107,23 @@ class TeacherAuthController extends Controller
                 $teacherRate = $category->foreign_rate; // Default fallback
                 $originCountryCode = $user->teacherProfile->application?->origin_country;
                 if ($originCountryCode) {
+                    $originCountryCode = trim(strtoupper($originCountryCode));
                     $country = \App\Models\Country::where('code', $originCountryCode)->first();
-                    $region = $country ? strtolower(trim($country->region)) : 'foreign';
+                    
+                    if ($country) {
+                        $region = strtolower(trim($country->region));
+                    } else {
+                        // Fallback mapping if country is not found in DB
+                        $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
+                        if ($originCountryCode === 'EG') {
+                            $region = 'egypt';
+                        } elseif (in_array($originCountryCode, $arabCountries)) {
+                            $region = 'arab';
+                        } else {
+                            $region = 'foreign';
+                        }
+                    }
+
                     if ($region === 'egypt') {
                         $teacherRate = $category->egypt_rate;
                     } elseif ($region === 'arab') {
