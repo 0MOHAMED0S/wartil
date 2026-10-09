@@ -90,6 +90,7 @@ class TeacherAuthController extends Controller
             $user = $request->user();
             $user->load([
                 'teacherProfile.application.tracks',
+                'teacherProfile.category',
             ]);
 
             if (!$user->isTeacher() || !$user->teacherProfile) {
@@ -109,6 +110,7 @@ class TeacherAuthController extends Controller
                         'email' => $user->email,
                     ],
                     'profile' => $user->teacherProfile,
+                    'category' => $user->teacherProfile->category ?? null,
                     'tracks'  => $user->teacherProfile->application?->tracks ?? [],
                 ]
             ], 200);
