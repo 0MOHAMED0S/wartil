@@ -89,6 +89,9 @@ Route::prefix('teacher')->middleware('throttle:60,1')->group(function () {
         //contact us
         Route::get('/contact-settings', [ContactSettingController::class, 'index']);
 
+        // تقارير المعلم عن الطلاب بعد الجلسة
+        Route::post('/reports', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'store']);
+        
         // تقييمات المعلم
         Route::get('/ratings', [TeacherRatingController::class, 'index']);
     });
