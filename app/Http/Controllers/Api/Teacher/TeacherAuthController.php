@@ -108,7 +108,7 @@ class TeacherAuthController extends Controller
                 $originCountryCode = $user->teacherProfile->application?->origin_country;
                 if ($originCountryCode) {
                     $country = \App\Models\Country::where('code', $originCountryCode)->first();
-                    $region = $country ? $country->region : 'foreign';
+                    $region = $country ? strtolower(trim($country->region)) : 'foreign';
                     if ($region === 'egypt') {
                         $teacherRate = $category->egypt_rate;
                     } elseif ($region === 'arab') {
