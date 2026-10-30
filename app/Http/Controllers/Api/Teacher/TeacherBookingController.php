@@ -85,7 +85,7 @@ class TeacherBookingController extends Controller
                     'student' => [
                         'id'    => optional($student)->id,
                         'name'  => optional($student)->name,
-                        'photo' => optional($student)->photo_url,
+                        'photo' => optional($student)->profile_photo_path ? asset('storage/' . optional($student)->profile_photo_path) : null,
                     ],
                     'call_details' => [
                         'id'          => optional($callSession)->id,
