@@ -354,13 +354,14 @@ public function endBookedSession(Request $request)
             $studentRegion = null;
             $teacherEarnings = 0;
 
-            $slot->teacher->increment('minutes', $booking->deducted_minutes);
+            // Increment teacher minutes based on booked minutes (retain as is).
             $student = \App\Models\Student::where('user_id', $booking->user_id)->first();
             if ($student) {
+                // Process earnings without deducting student minutes by passing 0
                 $earningsData = app(\App\Services\PricingEngineService::class)->processSessionEarnings(
                     $slot->teacher,
                     $student,
-                    $booking->deducted_minutes
+                    0
                 );
                 $studentRegion = $earningsData['region'];
                 $teacherEarnings = $earningsData['earnings'];
@@ -370,7 +371,8 @@ public function endBookedSession(Request $request)
             $booking->update([
                 'ended_at' => $now,
                 'actual_duration' => $actualDuration,
-                'status' => 'completed',
+                // Mark as 'ended' to allow possible rejoining later
+                'status' => 'ended',
                 'recording_url' => $recordingUrl,
                 'student_region' => $studentRegion,
                 'teacher_earnings' => $teacherEarnings,
