@@ -153,18 +153,9 @@ class TeacherBookingController extends Controller
                     && $now->lessThanOrEqualTo($slotEndDateTime);
 
                 // هل تم إرسال تقرير لهذا الحجز؟
-                $isReported = \App\Models\TeacherReport::where('teacher_id', $teacher->id)
-                    ->where('student_id', $student->id)
-                    ->where(function ($q) use ($booking) {
-                        $q->where(function ($q2) use ($booking) {
-                            $q2->where('reportable_id', $booking->id)
-                               ->where('reportable_type', \App\Models\SlotBooking::class);
-                        })->orWhere(function ($q2) use ($booking) {
-                            $q2->where('reportable_id', $booking->id)
-                               ->where('reportable_type', 'slot');
-                        });
-                    })
-                    ->exists();
+                $reportQuery = \App\Models\TeacherReport::where('teacher_id', $teacher->id)
+                    ->where('student_id', $student->id);
+                $isReported = (clone $reportQuery)->exists();
 
                 return [
                     'booking_id'      => $booking->id,
