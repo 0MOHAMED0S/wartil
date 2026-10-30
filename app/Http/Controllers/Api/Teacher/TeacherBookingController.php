@@ -222,7 +222,7 @@ public function startBookedSession(Request $request)
             }
 
             $startTime = \Carbon\Carbon::parse($slot->date . ' ' . $slot->start_time);
-            if (\Carbon\Carbon::now()->addMinutes(5)->lessThan($startTime)) {
+            if (\Carbon\Carbon::now()->addMinutes(1)->lessThan($startTime)) {
                 return response()->json(['status' => false, 'message' => 'لا يمكنك بدء الجلسة الآن، انتظر حتى يحين الموعد.'], 400);
             }
 
