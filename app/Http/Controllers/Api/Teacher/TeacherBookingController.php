@@ -97,6 +97,7 @@ class TeacherBookingController extends Controller
 
                 return response()->json([
                     'status' => true,
+                    'message' => 'تم جلب أقرب موعد بنجاح.',
                     'data'   => $responseData,
                 ]);
         } catch (\Throwable $e) {
