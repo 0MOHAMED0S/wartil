@@ -412,8 +412,7 @@ public function endBookedSession(Request $request)
             $booking->update([
                 'ended_at' => $now,
                 'actual_duration' => $actualDuration,
-                // Mark as 'ended' to allow possible rejoining later
-                'status' => 'ended',
+                'status' => 'completed',
                 'recording_url' => $recordingUrl,
                 'student_region' => $studentRegion,
                 'teacher_earnings' => $teacherEarnings,
