@@ -152,6 +152,12 @@ class TeacherBookingController extends Controller
                 $canStart = !$isPast && $now->copy()->addMinutes(5)->greaterThanOrEqualTo($slotStartDateTime)
                     && $now->lessThanOrEqualTo($slotEndDateTime);
 
+                // هل تم إرسال تقرير لهذا الحجز؟
+                $isReported = \App\Models\TeacherReport::where('reportable_id', $booking->id)
+                    ->where('reportable_type', \App\Models\SlotBooking::class)
+                    ->where('teacher_id', $teacher->id)
+                    ->exists();
+
                 return [
                     'booking_id'      => $booking->id,
                     'slot_id'         => $slot->id,
@@ -160,6 +166,7 @@ class TeacherBookingController extends Controller
                     'end_time'        => $slot->end_time,
                     'status'          => $booking->status,
                     'is_past'         => $isPast,
+                    'is_reported'     => $isReported,
                     'student' => [
                         'id'    => $student->id,
                         'name'  => $student->name,
