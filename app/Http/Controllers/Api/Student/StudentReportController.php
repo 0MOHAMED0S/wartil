@@ -1,0 +1,178 @@
+<?php
+
+namespace App\Http\Controllers\Api\Student;
+
+use App\Http\Controllers\Controller;
+use App\Models\TeacherReport;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class StudentReportController extends Controller
+{
+    /**
+     * Get all reports for the authenticated student.
+     */
+    public function myReports(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'المستخدم غير مسجل الدخول',
+                ], 401);
+            }
+
+            if ($user->role !== 'student') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'غير مصرح لك بالوصول لهذه البيانات',
+                ], 403);
+            }
+
+            $perPage = min((int) $request->query('per_page', 15), 50);
+
+            $reports = TeacherReport::where('student_id', $user->id)
+                ->with([
+                    'teacher:id,user_id',
+                    'teacher.user:id,name',
+                    'reportable',
+                ])
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            $reports->getCollection()->transform(function ($report) {
+                return $this->formatReport($report);
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم جلب التقارير بنجاح',
+                'data' => $reports,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Student MyReports Error', [
+                'user_id' => optional($request->user())->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ أثناء جلب التقارير.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all reports for a specific dependent of the authenticated user.
+     */
+    public function dependentReports(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'المستخدم غير مسجل الدخول',
+                ], 401);
+            }
+
+            if ($user->role !== 'student') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'غير مصرح لك بالوصول لهذه البيانات',
+                ], 403);
+            }
+
+            // Validate ID is a positive integer
+            if (!is_numeric($id) || (int) $id <= 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'معرّف التابع غير صالح',
+                ], 422);
+            }
+
+            $id = (int) $id;
+
+            // Verify the dependent belongs to the authenticated user
+            $dependent = $user->dependents()->where('id', $id)->first();
+
+            if (!$dependent) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'التابع غير موجود أو لا ينتمي إليك',
+                ], 404);
+            }
+
+            // Prevent accessing own reports through this endpoint
+            if ($dependent->id === $user->id) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'لا يمكنك استخدام هذا المسار لتقاريرك الشخصية',
+                ], 422);
+            }
+
+            $perPage = min((int) $request->query('per_page', 15), 50);
+
+            $reports = TeacherReport::where('student_id', $dependent->id)
+                ->with([
+                    'teacher:id,user_id',
+                    'teacher.user:id,name',
+                    'reportable',
+                ])
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            $reports->getCollection()->transform(function ($report) {
+                return $this->formatReport($report);
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'تم جلب تقارير التابع بنجاح',
+                'student' => [
+                    'id' => $dependent->id,
+                    'name' => $dependent->name,
+                ],
+                'data' => $reports,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Student DependentReports Error', [
+                'user_id' => optional($request->user())->id,
+                'dependent_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ أثناء جلب تقارير التابع.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Format a single report for the API response.
+     */
+    private function formatReport(TeacherReport $report): array
+    {
+        return [
+            'id' => $report->id,
+            'teacher_name' => $report->teacher->user->name ?? 'Unknown',
+            'teacher_id' => $report->teacher_id,
+            'attendance_status' => $report->attendance_status,
+            'reception_level' => $report->reception_level,
+            'notes' => $report->notes,
+            'session_content' => $report->session_content,
+            'report' => $report->report,
+            'reportable_type' => $report->reportable_type,
+            'reportable_id' => $report->reportable_id,
+            'created_at' => $report->created_at?->format('Y-m-d H:i:s'),
+        ];
+    }
+}

@@ -195,6 +195,10 @@ Route::prefix('student')->middleware('throttle:60,1')->group(function () {
         Route::get('/contact-settings', [ContactSettingController::class, 'index']);
         Route::get('/wallet', [StudentWalletController::class, 'getWalletSummary']);
         Route::get('/wallet/transactions', [StudentWalletController::class, 'getTransactions']);
+
+        // تقارير الطالب
+        Route::get('/reports', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'myReports']);
+        Route::get('/reports/dependents/{id}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'dependentReports']);
     });
 });
 Route::get('payments/callback', [BuyPackageController::class, 'handleCallback']);
