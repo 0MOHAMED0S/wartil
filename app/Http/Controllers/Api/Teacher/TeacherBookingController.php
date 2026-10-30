@@ -55,10 +55,50 @@ class TeacherBookingController extends Controller
                 ]);
             }
 
-            return response()->json([
-                'status' => true,
-                'data' => $this->formatSlotData($soonestSlot, $teacher, $now)
-            ]);
+                            // Build detailed response matching required format
+                $booking = $soonestSlot->booking;
+                $student = optional($booking)->user;
+
+                $slotStartDateTime = Carbon::parse($soonestSlot->date . ' ' . $soonestSlot->start_time);
+                $slotEndDateTime   = Carbon::parse($soonestSlot->date . ' ' . $soonestSlot->end_time);
+
+                $callSession = CallSession::where('teacher_id', $teacher->id)
+                    ->where('student_id', optional($student)->id)
+                    ->where('started_at', $slotStartDateTime->toDateTimeString())
+                    ->first();
+
+                $isPast = $slotEndDateTime->isPast()
+                    || optional($callSession)->status === 'ended'
+                    || optional($booking)->status === 'completed';
+
+                $canStart = !$isPast && $now->copy()->addMinutes(5)->greaterThanOrEqualTo($slotStartDateTime)
+                    && $now->lessThanOrEqualTo($slotEndDateTime);
+
+                $responseData = [
+                    'booking_id' => optional($booking)->id,
+                    'slot_id'    => $soonestSlot->id,
+                    'date'       => $soonestSlot->date,
+                    'start_time' => $soonestSlot->start_time,
+                    'end_time'   => $soonestSlot->end_time,
+                    'status'     => optional($booking)->status,
+                    'is_past'    => $isPast,
+                    'student' => [
+                        'id'    => optional($student)->id,
+                        'name'  => optional($student)->name,
+                        'photo' => optional($student)->photo_url,
+                    ],
+                    'call_details' => [
+                        'id'          => optional($callSession)->id,
+                        'channel_name'=> optional($callSession)->channel_name,
+                        'status'      => optional($callSession)->status ?? 'not_started',
+                        'can_start'   => $canStart,
+                    ],
+                ];
+
+                return response()->json([
+                    'status' => true,
+                    'data'   => $responseData,
+                ]);
         } catch (\Throwable $e) {
             Log::error('Soonest Booking Error: ' . $e->getMessage());
             return response()->json(['status' => false, 'message' => 'حدث خطأ في جلب أقرب موعد.'], 500);
