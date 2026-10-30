@@ -434,7 +434,7 @@ public function endBookedSession(Request $request)
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             \Illuminate\Support\Facades\Log::error('End Session Error: ' . $e->getMessage());
-            return response()->json(['status' => false, 'message' => 'حدث خطأ تقني أثناء إنهاء الجلسة.'], 500);
+            return response()->json(['status' => false, 'message' => 'حدث خطأ تقني أثناء إنهاء الجلسة.', 'error' => $e->getMessage()], 500);
         }
     }
 
