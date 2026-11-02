@@ -252,9 +252,25 @@ public function getReportByBooking(Request $request, $slot_id)
 
         $slot_id = (int) $slot_id;
 
+        // البحث عن الحجز المرتبط بهذا الـ slot والمستخدم للتأكد من وجوده وجلب الـ booking_id والـ slot_id معاً
+        $booking = SlotBooking::where('user_id', $user->id)
+            ->where(function ($query) use ($slot_id) {
+                $query->where('id', $slot_id)
+                      ->orWhere('teacher_slot_id', $slot_id);
+            })->first();
+
+        $bookingId = $booking ? $booking->id : null;
+        $actualSlotId = $booking ? $booking->teacher_slot_id : $slot_id;
+
+        // جلب التقرير بالبحث عن reportable_id إما بقيمة الـ slot_id أو الـ booking_id
         $report = TeacherReport::where('student_id', $user->id)
             ->where('reportable_type', SlotBooking::class)
-            ->where('reportable_id', $slot_id)
+            ->where(function ($query) use ($actualSlotId, $bookingId) {
+                $query->where('reportable_id', $actualSlotId);
+                if ($bookingId) {
+                    $query->orWhere('reportable_id', $bookingId);
+                }
+            })
             ->with(['teacher:id,user_id', 'teacher.user:id,name'])
             ->first();
 
