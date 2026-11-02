@@ -175,7 +175,8 @@ class TeacherAuthController extends Controller
                     'profile' => $user->teacherProfile->makeHidden(['application', 'category']),
                     // Provide category and tracks separately
                     'category' => $categoryData,
-                    'tracks'  => $user->teacherProfile->application?->tracks ?? [],
+                    'tracks' => $user->teacherProfile->application?->tracks ?? [],
+                    'country_code' => $clientCountryCode,
                 ]
             ], 200);
         } catch (\Throwable $e) {
