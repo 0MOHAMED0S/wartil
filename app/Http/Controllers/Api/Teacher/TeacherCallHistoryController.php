@@ -29,7 +29,7 @@ public function index()
         $calls = CallSession::where('teacher_id', $teacher->id)
             ->with([
                 'student:id,name',
-                'student.student:id,profile_photo_path',
+                'student.student:id,user_id,profile_photo_path',
                 'student.studentProfile:id,profile_photo_path',
                 'ratings'
             ])
