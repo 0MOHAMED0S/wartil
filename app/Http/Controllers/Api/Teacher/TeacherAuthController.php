@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Events\TeacherStatusChanged;
 use App\Http\Requests\Teacher\UpdateTeacherProfileRequest;
+use App\Services\GeoIPService;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -105,9 +107,35 @@ class TeacherAuthController extends Controller
 
             if ($categoryData) {
                 $teacherRate = $category->foreign_rate; // Default fallback
-                $originCountryCode = $user->teacherProfile->application?->origin_country;
-                if ($originCountryCode) {
-                    $originCountryCode = trim(strtoupper($originCountryCode));
+                $region = 'foreign';
+                $ip = $request->ip();
+                if ($ip) {
+                    $ipCountryCode = GeoIPService::getCountryCode($ip);
+                    if ($ipCountryCode) {
+                        $ipCountryCode = trim(strtoupper($ipCountryCode));
+                        $country = \App\Models\Country::where('code', $ipCountryCode)->first();
+                        if ($country) {
+                            $region = strtolower(trim($country->region));
+                        } else {
+                            $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
+                            if ($ipCountryCode === 'EG') {
+                                $region = 'egypt';
+                            } elseif (in_array($ipCountryCode, $arabCountries)) {
+                                $region = 'arab';
+                            } else {
+                                $region = 'foreign';
+                            }
+                        }
+                    }
+                }
+                if ($region === 'egypt') {
+                    $teacherRate = $category->egypt_rate;
+                } elseif ($region === 'arab') {
+                    $teacherRate = $category->arab_rate;
+                }
+
+
+
                     $country = \App\Models\Country::where('code', $originCountryCode)->first();
                     
                     if ($country) {
