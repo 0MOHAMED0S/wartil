@@ -83,9 +83,17 @@ class NotificationController extends Controller
                 ], 401);
             }
 
-            // Validate notification_id
-            $notificationId = $request->input('notification_id');
-            if (empty($notificationId) || !is_numeric($notificationId)) {
+            // Accept notification identifier (numeric ID or UUID). The front‑end may send it as "notification_id" or simply "id".
+            $notificationId = $request->input('notification_id') ?? $request->input('id');
+            if (empty($notificationId)) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'معرّف الإشعار غير صالح.',
+                ], 422);
+            }
+            // Optional: basic UUID format check (allow numeric IDs as well)
+            $isUuid = preg_match('/^[0-9a-fA-F-]{36}$/', $notificationId);
+            if (!is_numeric($notificationId) && !$isUuid) {
                 return response()->json([
                     'status'  => false,
                     'message' => 'معرّف الإشعار غير صالح.',
