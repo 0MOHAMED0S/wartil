@@ -8,6 +8,8 @@ use App\Models\CallSession;
 use App\Models\SlotBooking;
 use App\Models\Session_student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 class TeacherReportController extends Controller
 {
@@ -63,5 +65,79 @@ class TeacherReportController extends Controller
             'message' => 'تم رفع التقرير بنجاح',
             'data' => $report
         ], 201);
+    }
+
+    // Get report for a specific call (if exists)
+    public function getByCall(Request $request, $callId): JsonResponse
+    {
+        try {
+            $teacher = auth()->user()->teacher;
+            if (!$teacher) {
+                return response()->json(['status' => false, 'message' => 'Teacher profile not found.'], 404);
+            }
+
+            // Ensure the call belongs to this teacher
+            $call = CallSession::where('id', $callId)
+                ->where('teacher_id', $teacher->id)
+                ->first();
+
+            if (!$call) {
+                return response()->json(['status' => false, 'message' => 'المكالمة غير موجودة أو لا تملك صلاحية عرضها.'], 404);
+            }
+
+            $report = TeacherReport::where('reportable_type', CallSession::class)
+                ->where('reportable_id', $callId)
+                ->first();
+
+            if (!$report) {
+                return response()->json(['status' => false, 'message' => 'لا يوجد تقرير لهذه المكالمة.'], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'data'   => $report,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Get Call Report Error', [
+                'teacher_id' => optional($teacher)->id,
+                'call_id'    => $callId,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
+            ]);
+            return response()->json(['status' => false, 'message' => 'حدث خطأ أثناء جلب التقرير.'], 500);
+        }
+    }
+
+    // Show a specific report by its ID
+    public function show(Request $request, $reportId): JsonResponse
+    {
+        try {
+            $teacher = auth()->user()->teacher;
+            if (!$teacher) {
+                return response()->json(['status' => false, 'message' => 'Teacher profile not found.'], 404);
+            }
+
+            $report = TeacherReport::where('id', $reportId)
+                ->where('teacher_id', $teacher->id)
+                ->first();
+
+            if (!$report) {
+                return response()->json(['status' => false, 'message' => 'التقرير غير موجود أو لا يخص المعلم.'], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'data'   => $report,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Show Report Error', [
+                'teacher_id' => optional($teacher)->id,
+                'report_id'  => $reportId,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
+            ]);
+            return response()->json(['status' => false, 'message' => 'حدث خطأ أثناء جلب التقرير.'], 500);
+        }
+    }
     }
 }

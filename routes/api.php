@@ -91,6 +91,8 @@ Route::prefix('teacher')->middleware('throttle:60,1')->group(function () {
 
         // تقارير المعلم عن الطلاب بعد الجلسة
         Route::post('/reports', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'store']);
+        Route::get('/reports/call/{callId}', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'getByCall']);
+        Route::get('/reports/{reportId}', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'show']);
         
         // تقييمات المعلم
         Route::get('/ratings', [TeacherRatingController::class, 'index']);
