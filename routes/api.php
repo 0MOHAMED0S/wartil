@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Student\StudentBookingController;
 use App\Http\Controllers\Api\Student\StudentBuyPackageController;
 use App\Http\Controllers\Api\Student\StudentXPayController;
 use App\Http\Controllers\Api\Student\StudentCallHistoryController;
+use App\Http\Controllers\Api\Teacher\TeacherReportController;
 use App\Http\Controllers\Api\Student\StudentPackageController;
 use App\Http\Controllers\Api\Student\StudentTeacherController;
 use App\Http\Controllers\Api\Student\StudentTracksController;
@@ -91,9 +92,7 @@ Route::prefix('teacher')->middleware('throttle:60,1')->group(function () {
 
         // تقارير المعلم عن الطلاب بعد الجلسة
         Route::post('/reports', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'store']);
-        Route::get('/reports/call/{callId}', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'getByCall']);
-        Route::get('/reports/{reportId}', [\App\Http\Controllers\Api\Teacher\TeacherReportController::class, 'show']);
-        
+
         // تقييمات المعلم
         Route::get('/ratings', [TeacherRatingController::class, 'index']);
     });
@@ -201,6 +200,9 @@ Route::prefix('student')->middleware('throttle:60,1')->group(function () {
         // تقارير الطالب
         Route::get('/reports', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'myReports']);
         Route::get('/reports/dependents/{id}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'dependentReports']);
+        Route::get('/reports/call/{callId}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'getByCall']);
+        Route::get('/reports/{reportId}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'show']);
+        
     });
 });
 Route::get('payments/callback', [BuyPackageController::class, 'handleCallback']);

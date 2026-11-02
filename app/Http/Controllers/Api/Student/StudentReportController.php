@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\TeacherReport;
+use App\Models\CallSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -175,4 +176,55 @@ class StudentReportController extends Controller
             'created_at' => $report->created_at?->format('Y-m-d H:i:s'),
         ];
     }
+    // Get a specific report by call ID for the authenticated student
+    public function getByCall(Request $request, $callId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'المستخدم غير مسجل الدخول'], 401);
+        }
+
+        if ($user->role !== 'student') {
+            return response()->json(['status' => false, 'message' => 'غير مصرح لك بالوصول لهذه البيانات'], 403);
+        }
+
+        $report = TeacherReport::where('student_id', $user->id)
+            ->where('reportable_type', CallSession::class)
+            ->where('reportable_id', $callId)
+            ->with(['teacher.user:id,name', 'reportable'])
+            ->first();
+
+        if (!$report) {
+            return response()->json(['status' => false, 'message' => 'التقرير غير موجود'], 404);
+        }
+
+        return response()->json(['status' => true, 'data' => $this->formatReport($report)]);
+    }
+
+    // Show a specific report by its ID for the authenticated student
+    public function show(Request $request, $reportId)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'المستخدم غير مسجل الدخول'], 401);
+        }
+
+        if ($user->role !== 'student') {
+            return response()->json(['status' => false, 'message' => 'غير مصرح لك بالوصول لهذه البيانات'], 403);
+        }
+
+        $report = TeacherReport::where('student_id', $user->id)
+            ->where('id', $reportId)
+            ->with(['teacher.user:id,name', 'reportable'])
+            ->first();
+
+        if (!$report) {
+            return response()->json(['status' => false, 'message' => 'التقرير غير موجود'], 404);
+        }
+
+        return response()->json(['status' => true, 'data' => $this->formatReport($report)]);
+    }
+
 }
