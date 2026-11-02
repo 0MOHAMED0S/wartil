@@ -287,4 +287,37 @@ public function profile(Request $request)
             ], 500);
         }
     }
+    // Helper method to calculate minutes per region based on students' IP addresses
+    protected function calculateRegionMinutes(User $teacher)
+    {
+        $minutes = ['egypt' => 0, 'arab' => 0, 'foreign' => 0];
+        // Retrieve all call sessions for this teacher with associated student
+        $calls = \App\Models\CallSession::where('teacher_id', $teacher->id)
+            ->with('student')
+            ->get();
+
+        $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
+
+        foreach ($calls as $call) {
+            $student = $call->student;
+            // Assume student model may have a 'last_ip' attribute; fallback to null
+            $ip = $student->last_ip ?? null;
+            $region = 'foreign';
+            if ($ip) {
+                $countryCode = \App\Services\GeoIPService::getCountryCode($ip);
+                if ($countryCode) {
+                    $code = strtoupper(trim($countryCode));
+                    if ($code === 'EG') {
+                        $region = 'egypt';
+                    } elseif (in_array($code, $arabCountries)) {
+                        $region = 'arab';
+                    }
+                }
+            }
+            $duration = $call->duration_minutes ?? 0;
+            $minutes[$region] += $duration;
+        }
+
+        return $minutes;
+    }
 }
