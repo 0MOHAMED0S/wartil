@@ -28,7 +28,7 @@ public function index()
 
         $calls = CallSession::where('teacher_id', $teacher->id)
             ->with([
-                'student:id,name',
+                'student:id,name,profile_photo_path',
                 'ratings'
             ])
             ->orderBy('created_at', 'desc')
@@ -61,6 +61,7 @@ public function index()
             return [
                 'id'               => $call->id,
                 'student_name'     => optional($call->student)->name ?? 'طالب',
+                'student_image_url' => $call->student && $call->student->profile_photo_path ? asset('storage/' . $call->student->profile_photo_path) : null,
                 'status'           => $call->status,
                 'duration_minutes' => $call->duration_minutes,
                 'date'             => $call->created_at->format('Y-m-d'),
