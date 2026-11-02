@@ -143,6 +143,33 @@ public function profile(Request $request)
             $categoryData['teacher_rate'] = $teacherRate;
         }
 
+        // 4. حساب عدد الساعات حسب المنطقة (مصر، عربية، أجنبية)
+        $hoursByRegion = ['egypt' => 0, 'arab' => 0, 'foreign' => 0];
+        $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
+        $calls = \App\Models\CallSession::where('teacher_id', $user->id)->with('student')->get();
+        foreach ($calls as $call) {
+            $studentUserId = $call->student_id;
+            $student = \App\Models\Student::where('user_id', $studentUserId)->first();
+            $regionKey = 'foreign';
+            if ($student && $student->country) {
+                $countryCode = strtoupper($student->country->code);
+                $country = \App\Models\Country::where('code', $countryCode)->first();
+                if ($country && $country->region) {
+                    $regionKey = strtolower($country->region);
+                } else {
+                    if ($countryCode === 'EG') {
+                        $regionKey = 'egypt';
+                    } elseif (in_array($countryCode, $arabCountries)) {
+                        $regionKey = 'arab';
+                    }
+                }
+            }
+            $minutes = $call->duration_minutes ?? 0;
+            $hoursByRegion[$regionKey] = ($hoursByRegion[$regionKey] ?? 0) + $minutes;
+        }
+        // تحويل الدقائق إلى ساعات (تقريب لعدد الساعات)
+        $hoursByRegion = array_map(fn($mins) => round($mins / 60, 2), $hoursByRegion);
+
         return response()->json([
             'status' => true,
             'message' => 'تم جلب البيانات بنجاح',
