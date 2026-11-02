@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\CallSession;
+use App\Models\TeacherReport;
 
 class StudentCallHistoryController extends Controller
 {
