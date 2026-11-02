@@ -86,107 +86,86 @@ class TeacherAuthController extends Controller
             ], 500);
         }
     }
-    public function profile(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $user->load([
-                'teacherProfile.application.tracks',
-                'teacherProfile.category',
-            ]);
+public function profile(Request $request)
+{
+    try {
+        $user = $request->user();
+        $user->load([
+            'teacherProfile.application.tracks',
+            'teacherProfile.category',
+        ]);
 
-            if (!$user->isTeacher() || !$user->teacherProfile) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'الملف الشخصي غير مكتمل.'
-                ], 403);
-            }
-
-            $category = $user->teacherProfile->category;
-            $categoryData = $category ? $category->toArray() : null;
-
-            if ($categoryData) {
-                $teacherRate = $category->egypt_rate; // Default fallback (assume Egyptian)
-                $region = 'egypt';
-                $ip = $request->ip();
-                if ($ip) {
-                    $ipCountryCode = GeoIPService::getCountryCode($ip);
-                    if ($ipCountryCode) {
-                        $ipCountryCode = trim(strtoupper($ipCountryCode));
-                        $country = \App\Models\Country::where('code', $ipCountryCode)->first();
-                        if ($country) {
-                            $region = strtolower(trim($country->region));
-                        } else {
-                            $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
-                            if ($ipCountryCode === 'EG') {
-                                $region = 'egypt';
-                            } elseif (in_array($ipCountryCode, $arabCountries)) {
-                                $region = 'arab';
-                            } else {
-                                $region = 'foreign';
-                            }
-                        }
-                    }
-                }
-                if ($region === 'egypt') {
-                    $teacherRate = $category->egypt_rate;
-                } elseif ($region === 'arab') {
-                    $teacherRate = $category->arab_rate;
-                }
-
-
-
-
-                    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                $categoryData['teacher_rate'] = $teacherRate;
-                $clientCountryCode = $ipCountryCode ?? null;
-            }
-
+        if (!$user->isTeacher() || !$user->teacherProfile) {
             return response()->json([
-                'status' => true,
-                'message' => 'تم جلب البيانات بنجاح',
-                'data' => [
-                    'user' => [
-                        'id'    => $user->id,
-                        'name'  => $user->name,
-                        'email' => $user->email,
-                    ],
-                    // Return a cleaned profile without redundant relationships
-                    'profile' => $user->teacherProfile->makeHidden(['application', 'category']),
-                    // Provide category and tracks separately
-                    'category' => $categoryData,
-                    'tracks' => $user->teacherProfile->application?->tracks ?? [],
-                    'country_code' => $clientCountryCode,
-                ]
-            ], 200);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'حدث خطأ أثناء جلب البيانات.',
-                'error'   => config('app.debug') ? $e->getMessage() : null
-            ], 500);
+                'status' => false,
+                'message' => 'الملف الشخصي غير مكتمل.'
+            ], 403);
         }
+
+        // 1. جلب كود الدولة دائماً (حتى لو لم يكن هناك category)
+        $ip = $request->ip();
+        $ipCountryCode = \App\Services\GeoIPService::getCountryCode($ip);
+        $clientCountryCode = $ipCountryCode ? trim(strtoupper($ipCountryCode)) : 'EG';
+
+        // 2. تحديد المنطقة (Region)
+        $region = 'egypt';
+        if ($clientCountryCode) {
+            $country = \App\Models\Country::where('code', $clientCountryCode)->first();
+            if ($country && $country->region) {
+                $region = strtolower(trim($country->region));
+            } else {
+                $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
+                if ($clientCountryCode === 'EG') {
+                    $region = 'egypt';
+                } elseif (in_array($clientCountryCode, $arabCountries)) {
+                    $region = 'arab';
+                } else {
+                    $region = 'foreign';
+                }
+            }
+        }
+
+        // 3. تجهيز بيانات الـ Category وسعر المعلم حسب المنطقة
+        $category = $user->teacherProfile->category;
+        $categoryData = $category ? $category->toArray() : null;
+
+        if ($categoryData) {
+            $teacherRate = $category->egypt_rate; // Default fallback
+
+            if ($region === 'egypt') {
+                $teacherRate = $category->egypt_rate;
+            } elseif ($region === 'arab') {
+                $teacherRate = $category->arab_rate;
+            } elseif ($region === 'foreign') {
+                $teacherRate = $category->foreign_rate ?? $category->arab_rate;
+            }
+
+            $categoryData['teacher_rate'] = $teacherRate;
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم جلب البيانات بنجاح',
+            'data' => [
+                'user' => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                ],
+                'profile' => $user->teacherProfile->makeHidden(['application', 'category']),
+                'category' => $categoryData,
+                'tracks' => $user->teacherProfile->application?->tracks ?? [],
+                'country_code' => $clientCountryCode,
+            ]
+        ], 200);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'حدث خطأ أثناء جلب البيانات.',
+            'error'   => config('app.debug') ? $e->getMessage() : null
+        ], 500);
     }
+}
     public function toggleOnlineStatus(Request $request)
     {
         try {
