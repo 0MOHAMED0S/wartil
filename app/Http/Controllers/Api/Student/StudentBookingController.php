@@ -169,6 +169,12 @@ class StudentBookingController extends Controller
                     ->where('started_at', $slotStart->toDateTimeString())
                     ->first();
 
+                \Log::info([
+                    'slot_id' => $booking->slot_id,
+                    'booking_id' => $booking->id,
+                    'exists_slot' => TeacherReport::where('reportable_id', $booking->slot_id)->exists(),
+                    'exists_type' => TeacherReport::where('reportable_type', SlotBooking::class)->exists(),
+                ]);
                 return [
                     'booking_id'    => $booking->id,
                     'slot_id'       => $slot->id,
