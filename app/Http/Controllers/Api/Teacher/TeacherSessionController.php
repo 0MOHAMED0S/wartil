@@ -8,6 +8,7 @@ use App\Models\Session_student;
 use App\Services\AgoraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\TeacherReport;
 
 class TeacherSessionController extends Controller
 {
@@ -451,6 +452,7 @@ class TeacherSessionController extends Controller
                     'start_at'          => $session->start_at->format('Y-m-d H:i:s'),
                     'end_at'            => $session->end_at->format('Y-m-d H:i:s'),
                     'recording_url'     => $session->recording_url,
+                    'is_reported'      => TeacherReport::where('reportable_type', RecitationSession::class)->where('reportable_id', $session->id)->exists(),
                     'my_attendance'     => [
                         'joined_at'        => optional($attendance)->joined_at ? $attendance->joined_at->format('H:i:s') : null,
                         'left_at'          => optional($attendance)->left_at ? $attendance->left_at->format('H:i:s') : null,

@@ -81,6 +81,7 @@ class StudentCallHistoryController extends Controller
                     'channel_name'     => $call->channel_name,
                     'duration_minutes' => $call->duration_minutes,
                     'recording_url'    => $call->recording_url,
+                    'is_reported' => TeacherReport::where('reportable_type', CallSession::class)->where('reportable_id', $call->id)->exists(),
                     'timeline' => [
                         'requested_at' => $call->created_at->format('Y-m-d H:i:s'),
                         'started_at'   => $call->started_at ? $call->started_at->format('H:i:s') : null,
