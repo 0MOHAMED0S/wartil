@@ -290,12 +290,38 @@ public function profile(Request $request)
     // Helper method to calculate minutes per region based on students' IP addresses
     protected function calculateRegionMinutes(User $teacher)
     {
-        $minutes = [
-            'egypt' => 0,
-            'arab'  => 0,
-            'foreign' => $teacher->teacherProfile->minutes ?? 0,
-        ];
-        // No per-region breakdown available, assign all minutes to foreign
+        $minutes = ['egypt' => 0, 'arab' => 0, 'foreign' => 0];
+        // Retrieve all call sessions for this teacher with associated student and their country
+        $calls = \App\Models\CallSession::where('teacher_id', $teacher->id)
+            ->with('student')
+            ->get();
+
+        // List of Arab country codes (excluding Egypt)
+        $arabCountries = ['SA','AE','KW','QA','BH','OM','JO','LB','SY','IQ','YE','PS','SD','LY','TN','DZ','MA','MR'];
+
+        foreach ($calls as $call) {
+            $student = $call->student;
+            // Determine country code via student's country relationship or fallback to GeoIP if available
+            $countryCode = null;
+            if (method_exists($student, 'country') && $student->country) {
+                $countryCode = $student->country->code ?? null;
+            }
+            // Fallback to IP lookup if country not set
+            if (!$countryCode && property_exists($student, 'last_ip')) {
+                $countryCode = \App\Services\GeoIPService::getCountryCode($student->last_ip);
+            }
+            $region = 'foreign';
+            if ($countryCode) {
+                $code = strtoupper(trim($countryCode));
+                if ($code === 'EG') {
+                    $region = 'egypt';
+                } elseif (in_array($code, $arabCountries)) {
+                    $region = 'arab';
+                }
+            }
+            $duration = $call->duration_minutes ?? 0;
+            $minutes[$region] += $duration;
+        }
         return $minutes;
     }
 }
