@@ -227,4 +227,61 @@ class StudentReportController extends Controller
         return response()->json(['status' => true, 'data' => $this->formatReport($report)]);
     }
 
+    /**
+ * Get a specific report for a booking (slot).
+ *
+ * GET /reports/booking/{slot_id}
+ */
+public function getReportByBooking(Request $request, $slot_id)
+{
+    try {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'المستخدم غير مسجل الدخول'], 401);
+        }
+
+        if ($user->role !== 'student') {
+            return response()->json(['status' => false, 'message' => 'غير مصرح لك بالوصول لهذه البيانات'], 403);
+        }
+
+        // Validate slot_id
+        if (!is_numeric($slot_id) || (int) $slot_id <= 0) {
+            return response()->json(['status' => false, 'message' => 'معرّف الحجز غير صالح'], 422);
+        }
+
+        $slot_id = (int) $slot_id;
+
+        $report = TeacherReport::where('student_id', $user->id)
+            ->where('reportable_type', SlotBooking::class)
+            ->where('reportable_id', $slot_id)
+            ->with(['teacher:id,user_id', 'teacher.user:id,name'])
+            ->first();
+
+        if (!$report) {
+            return response()->json(['status' => false, 'message' => 'التقرير غير موجود'], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم جلب التقرير بنجاح',
+            'data' => $this->formatReport($report),
+        ], 200);
+    } catch (\Throwable $e) {
+        Log::error('Student getReportByBooking Error', [
+            'user_id' => optional($request->user())->id,
+            'slot_id' => $slot_id ?? null,
+            'error'   => $e->getMessage(),
+            'trace'   => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'status' => false,
+            'message' => 'حدث خطأ أثناء جلب التقرير.',
+            'error'   => config('app.debug') ? $e->getMessage() : null,
+        ], 500);
+    }
+}
+
+
 }
