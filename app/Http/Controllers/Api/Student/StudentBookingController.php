@@ -337,14 +337,14 @@ class StudentBookingController extends Controller
     /**
      * Get report details for a specific booking.
      */
-    public function getByBooking(Request $request, $bookingId)
+    public function getByBooking(Request $request, $slotId)
     {
         try {
             $user = $request->user();
 
-            // Ensure the booking belongs to the authenticated student
+            // Ensure the booking belongs to the authenticated student and matches the slot ID
             $booking = SlotBooking::with(['slot.teacher.user', 'reports'])
-                ->where('id', $bookingId)
+                ->where('slot_id', $slotId)
                 ->where('user_id', $user->id)
                 ->first();
 
