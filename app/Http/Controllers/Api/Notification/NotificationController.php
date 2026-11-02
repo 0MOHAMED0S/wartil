@@ -33,8 +33,7 @@ class NotificationController extends Controller
                 $data = $notification->data;
 
                 return [
-                    // Return a hyphen‑less UUID to make the ID look "normal"
-                    'id'         => str_replace('-', '', $notification->id),
+                    'id'         => $notification->id,
                     'title'      => $data['title'] ?? 'إشعار جديد',
                     'message'    => $data['message'] ?? '',
                     'type'       => $data['type'] ?? 'general',
