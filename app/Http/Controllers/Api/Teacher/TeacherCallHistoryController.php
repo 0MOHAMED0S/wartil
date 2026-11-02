@@ -26,11 +26,10 @@ public function index()
             ], 404);
         }
 
+        // جلب student كاملاً بدون تقييد الأعمدة لتجنب ضياع مفاتيح الربط أو أسماء أعمدة الصور
         $calls = CallSession::where('teacher_id', $teacher->id)
             ->with([
-                'student:id,name',
-                'student.student:id,user_id,profile_photo_path',
-                'student.studentProfile:id,profile_photo_path',
+                'student',
                 'ratings'
             ])
             ->orderBy('created_at', 'desc')
@@ -47,7 +46,7 @@ public function index()
         // 1. جمع معرفات المكالمات الظاهرة في الصفحة الحالية
         $callIds = $calls->pluck('id');
 
-        // 2. جلب الـ IDs المُبلغ عنها دفعة واحدة (مع دعم عدة احتمالات لكتابة الـ Model لتجنب خطأ false الدائم)
+        // 2. جلب الـ IDs المُبلغ عنها دفعة واحدة
         $reportedCallIds = TeacherReport::whereIn('reportable_id', $callIds)
             ->where(function ($query) {
                 $query->where('reportable_type', CallSession::class)
@@ -57,20 +56,51 @@ public function index()
             ->pluck('reportable_id')
             ->toArray();
 
-        // Transform list for a cleaner overview (keeping exact same response structure)
+        // Transform list for a cleaner overview
         $calls->getCollection()->transform(function ($call) use ($reportedCallIds) {
             $rating = $call->ratings->first();
+            $user = $call->student;
+
+            // البحث عن بروفايل الطالب بأمان سواء كان اسم العلاقة studentProfile أو student
+            $profile = null;
+            if ($user) {
+                if (method_exists($user, 'studentProfile')) {
+                    $profile = $user->studentProfile;
+                } elseif (method_exists($user, 'student')) {
+                    $profile = $user->student;
+                }
+            }
+
+            // البحث عن مسار الصورة في كل الحقول المحتملة (في جدول البروفايل أو جدول المستخدمين)
+            $photoPath = $profile?->profile_photo_path 
+                      ?? $profile?->image 
+                      ?? $profile?->photo 
+                      ?? $profile?->avatar 
+                      ?? $user?->profile_photo_path 
+                      ?? $user?->image 
+                      ?? $user?->photo 
+                      ?? $user?->avatar;
+
+            // إذا كان المسار رابطاً كاملاً (يبدأ بـ http) نعيده كما هو، وإلا نضيف مسار storage
+            $imageUrl = null;
+            if ($photoPath) {
+                $imageUrl = str_starts_with($photoPath, 'http') ? $photoPath : asset('storage/' . $photoPath);
+            } elseif ($user && !empty($user->profile_photo_url)) {
+                // في حال استخدام Laravel Jetstream
+                $imageUrl = $user->profile_photo_url;
+            }
+
             return [
-                'id'               => $call->id,
-                'student_name'     => optional($call->student)->name ?? 'طالب',
-                'student_image_url' => optional($call->student->student)->profile_photo_path ? asset('storage/' . $call->student->student->profile_photo_path) : (optional($call->student->studentProfile)->profile_photo_path ? asset('storage/' . $call->student->studentProfile->profile_photo_path) : null),
-                'status'           => $call->status,
-                'duration_minutes' => $call->duration_minutes,
-                'date'             => $call->created_at->format('Y-m-d'),
-                'time'             => $call->created_at->format('H:i:s'),
-                'recording_url'    => $call->recording_url,
-                'rating'           => $rating ? $rating->rating : null,
-                'is_reported'      => in_array($call->id, $reportedCallIds), // سيعمل بشكل صحيح تماماً الآن
+                'id'                => $call->id,
+                'student_name'      => optional($user)->name ?? 'طالب',
+                'student_image_url' => $imageUrl,
+                'status'            => $call->status,
+                'duration_minutes'  => $call->duration_minutes,
+                'date'              => $call->created_at->format('Y-m-d'),
+                'time'              => $call->created_at->format('H:i:s'),
+                'recording_url'     => $call->recording_url,
+                'rating'            => $rating ? $rating->rating : null,
+                'is_reported'       => in_array($call->id, $reportedCallIds),
             ];
         });
 
@@ -79,7 +109,8 @@ public function index()
             'data'   => $calls
         ]);
 
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
+        \Log::error('Teacher Call History Error: ' . $e->getMessage());
         return response()->json([
             'status' => false,
             'message' => 'حدث خطأ أثناء جلب سجل المكالمات.'
