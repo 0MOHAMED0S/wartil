@@ -143,8 +143,24 @@ public function requestWithdrawal(Request $request)
 
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
+            // 1. خصم الرصيد المالي
             $teacher->decrement('balance', $validated['amount']);
 
+            // 2. حساب عدد الدقائق التي يساويها المبلغ بناءً على الأجر بالساعة
+            $hourlyRate = $teacher->category ? $teacher->category->egypt_rate : ($teacher->salary ?? 0);
+            $minutesToDeduct = 0;
+            if ($hourlyRate > 0) {
+                // التحويل من مبلغ إلى دقائق (المبلغ ÷ الأجر بالساعة) × 60 دقيقة
+                $minutesToDeduct = (int) round(($validated['amount'] / $hourlyRate) * 60);
+                // لا تسمح بخصم دقائق سلبية أو أكثر من الدقائق المتوفرة
+                $availableMinutes = $teacher->minutes ?? 0;
+                if ($minutesToDeduct > $availableMinutes) {
+                    $minutesToDeduct = $availableMinutes;
+                }
+                $teacher->decrement('minutes', $minutesToDeduct);
+            }
+
+            // 3. إنشاء سجل طلب السحب
             $withdrawal = \App\Models\WithdrawalRequest::create([
                 'teacher_id'     => $teacher->id,
                 'amount'         => $validated['amount'],
