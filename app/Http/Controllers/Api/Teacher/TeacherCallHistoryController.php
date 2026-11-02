@@ -53,6 +53,9 @@ class TeacherCallHistoryController extends Controller
                     'time'             => $call->created_at->format('H:i:s'),
                     'recording_url'    => $call->recording_url, // 🎥 إضافة رابط التسجيل هنا
                     'rating'           => $rating ? $rating->rating : null,
+                    'is_reported'      => TeacherReport::where('reportable_type', CallSession::class)
+                                                ->where('reportable_id', $call->id)
+                                                ->exists(),
                 ];
             });
 
