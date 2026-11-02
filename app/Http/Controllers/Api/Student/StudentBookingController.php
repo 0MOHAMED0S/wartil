@@ -169,12 +169,6 @@ class StudentBookingController extends Controller
                     ->where('started_at', $slotStart->toDateTimeString())
                     ->first();
 
-                \Log::info([
-                    'slot_id' => $booking->slot_id,
-                    'booking_id' => $booking->id,
-                    'exists_slot' => TeacherReport::where('reportable_id', $booking->slot_id)->exists(),
-                    'exists_type' => TeacherReport::where('reportable_type', SlotBooking::class)->exists(),
-                ]);
                 return [
                     'booking_id'    => $booking->id,
                     'slot_id'       => $slot->id,
@@ -183,7 +177,11 @@ class StudentBookingController extends Controller
                     'teacher_name'  => optional($teacher->user)->name ?? 'معلم ورتل',
                     'status'        => $booking->status,
                     'recording_url' => optional($callSession)->recording_url, // 🚀 رابط التسجيل
-                    'is_reported' => TeacherReport::where('reportable_id', $booking->slot_id)->exists(),
+                    'is_reported' => TeacherReport::where('reportable_type', SlotBooking::class)
+    ->where(function ($q) use ($booking) {
+        $q->where('reportable_id', $booking->id) // Usually the booking ID itself matches the reportable_id based on your database screenshot
+          ->orWhere('reportable_id', $booking->some_other_slot_column); // Use the correct column name here
+    })->exists(),
                     'duration'      => optional($callSession)->duration_minutes,
                 ];
             });
