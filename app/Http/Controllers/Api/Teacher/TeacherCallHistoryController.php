@@ -14,64 +14,75 @@ class TeacherCallHistoryController extends Controller
     /**
      * Get all call history for the authenticated teacher
      */
-    public function index()
-    {
-        try {
-            $teacher = auth()->user()->teacher;
+public function index()
+{
+    try {
+        $teacher = auth()->user()->teacher;
 
-            if (!$teacher) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'عذراً، لم يتم العثور على ملف معلم لهذا الحساب.'
-                ], 404);
-            }
-
-            $calls = CallSession::where('teacher_id', $teacher->id)
-                ->with([
-                    'student:id,name',
-                    'ratings'
-                ])
-                ->orderBy('created_at', 'desc')
-                ->paginate(15);
-
-            if ($calls->isEmpty()) {
-                return response()->json([
-                    'status' => true,
-                    'message' => 'لا يوجد سجل مكالمات حالياً.',
-                    'data' => $calls
-                ]);
-            }
-
-            // Transform list for a cleaner overview
-            $calls->getCollection()->transform(function ($call) {
-                $rating = $call->ratings->first();
-                return [
-                    'id'               => $call->id,
-                    'student_name'     => $call->student->name ?? 'طالب',
-                    'status'           => $call->status,
-                    'duration_minutes' => $call->duration_minutes,
-                    'date'             => $call->created_at->format('Y-m-d'),
-                    'time'             => $call->created_at->format('H:i:s'),
-                    'recording_url'    => $call->recording_url, // 🎥 إضافة رابط التسجيل هنا
-                    'rating'           => $rating ? $rating->rating : null,
-                    'is_reported'      => TeacherReport::where('reportable_type', CallSession::class)
-                                                ->where('reportable_id', $call->id)
-                                                ->exists(),
-                ];
-            });
-
-            return response()->json([
-                'status' => true,
-                'data'   => $calls
-            ]);
-
-        } catch (Exception $e) {
+        if (!$teacher) {
             return response()->json([
                 'status' => false,
-                'message' => 'حدث خطأ أثناء جلب سجل المكالمات.'
-            ], 500);
+                'message' => 'عذراً، لم يتم العثور على ملف معلم لهذا الحساب.'
+            ], 404);
         }
+
+        $calls = CallSession::where('teacher_id', $teacher->id)
+            ->with([
+                'student:id,name',
+                'ratings'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        if ($calls->isEmpty()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'لا يوجد سجل مكالمات حالياً.',
+                'data' => $calls
+            ]);
+        }
+
+        // 1. جمع معرفات المكالمات الظاهرة في الصفحة الحالية
+        $callIds = $calls->pluck('id');
+
+        // 2. جلب الـ IDs المُبلغ عنها دفعة واحدة (مع دعم عدة احتمالات لكتابة الـ Model لتجنب خطأ false الدائم)
+        $reportedCallIds = TeacherReport::whereIn('reportable_id', $callIds)
+            ->where(function ($query) {
+                $query->where('reportable_type', CallSession::class)
+                      ->orWhere('reportable_type', 'App\Models\CallSession')
+                      ->orWhere('reportable_type', 'CallSession');
+            })
+            ->pluck('reportable_id')
+            ->toArray();
+
+        // Transform list for a cleaner overview (keeping exact same response structure)
+        $calls->getCollection()->transform(function ($call) use ($reportedCallIds) {
+            $rating = $call->ratings->first();
+            return [
+                'id'               => $call->id,
+                'student_name'     => optional($call->student)->name ?? 'طالب',
+                'status'           => $call->status,
+                'duration_minutes' => $call->duration_minutes,
+                'date'             => $call->created_at->format('Y-m-d'),
+                'time'             => $call->created_at->format('H:i:s'),
+                'recording_url'    => $call->recording_url,
+                'rating'           => $rating ? $rating->rating : null,
+                'is_reported'      => in_array($call->id, $reportedCallIds), // سيعمل بشكل صحيح تماماً الآن
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'data'   => $calls
+        ]);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'حدث خطأ أثناء جلب سجل المكالمات.'
+        ], 500);
     }
+}
 
     /**
      * Get specific details of a call session
