@@ -28,8 +28,8 @@ public function index()
 
         $calls = CallSession::where('teacher_id', $teacher->id)
             ->with([
-                'student:id,name',
-                'student.student:id,profile_photo_path',
+                'student:id,name,profile_photo_path', // جلب الصورة لو كانت في جدول users
+                'student.student:id,user_id,profile_photo_path', // مهم جداً: إضافة user_id لنجاح الربط
                 'ratings'
             ])
             ->orderBy('created_at', 'desc')
@@ -46,7 +46,7 @@ public function index()
         // 1. جمع معرفات المكالمات الظاهرة في الصفحة الحالية
         $callIds = $calls->pluck('id');
 
-        // 2. جلب الـ IDs المُبلغ عنها دفعة واحدة (مع دعم عدة احتمالات لكتابة الـ Model لتجنب خطأ false الدائم)
+        // 2. جلب الـ IDs المُبلغ عنها دفعة واحدة
         $reportedCallIds = TeacherReport::whereIn('reportable_id', $callIds)
             ->where(function ($query) {
                 $query->where('reportable_type', CallSession::class)
@@ -56,20 +56,25 @@ public function index()
             ->pluck('reportable_id')
             ->toArray();
 
-        // Transform list for a cleaner overview (keeping exact same response structure)
+        // Transform list for a cleaner overview
         $calls->getCollection()->transform(function ($call) use ($reportedCallIds) {
             $rating = $call->ratings->first();
+            
+            // فحص مسار الصورة سواء كان في جدول student الفرعي أو جدول user الأساسي بأمان
+            $photoPath = $call->student?->student?->profile_photo_path 
+                      ?? $call->student?->profile_photo_path;
+
             return [
-                'id'               => $call->id,
-                'student_name'     => optional($call->student)->name ?? 'طالب',
-                'student_image_url' => optional($call->student->student)->profile_photo_path ? asset('storage/' . $call->student->student->profile_photo_path) : null,
-                'status'           => $call->status,
-                'duration_minutes' => $call->duration_minutes,
-                'date'             => $call->created_at->format('Y-m-d'),
-                'time'             => $call->created_at->format('H:i:s'),
-                'recording_url'    => $call->recording_url,
-                'rating'           => $rating ? $rating->rating : null,
-                'is_reported'      => in_array($call->id, $reportedCallIds), // سيعمل بشكل صحيح تماماً الآن
+                'id'                => $call->id,
+                'student_name'      => optional($call->student)->name ?? 'طالب',
+                'student_image_url' => $photoPath ? asset('storage/' . $photoPath) : null,
+                'status'            => $call->status,
+                'duration_minutes'  => $call->duration_minutes,
+                'date'              => $call->created_at->format('Y-m-d'),
+                'time'              => $call->created_at->format('H:i:s'),
+                'recording_url'     => $call->recording_url,
+                'rating'            => $rating ? $rating->rating : null,
+                'is_reported'       => in_array($call->id, $reportedCallIds),
             ];
         });
 
@@ -78,7 +83,7 @@ public function index()
             'data'   => $calls
         ]);
 
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         return response()->json([
             'status' => false,
             'message' => 'حدث خطأ أثناء جلب سجل المكالمات.'
