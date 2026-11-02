@@ -28,7 +28,7 @@ public function index()
 
         $calls = CallSession::where('teacher_id', $teacher->id)
             ->with([
-                'student',
+                'student:id,name',
                 'ratings'
             ])
             ->orderBy('created_at', 'desc')
@@ -41,16 +41,6 @@ public function index()
                 'data' => $calls
             ]);
         }
-
-        // 🔍 كود الفحص (Debug) لمعرفة أين المشكلة بالضبط
-        $firstCall = $calls->first();
-        dd([
-            '1_call_data'              => $firstCall ? $firstCall->toArray() : null,
-            '2_student_relation'       => $firstCall?->student ? $firstCall->student->toArray() : 'Student relation is NULL',
-            '3_student_by_user_id'     => $firstCall ? \App\Models\Student::where('user_id', $firstCall->student_id)->first()?->toArray() : null,
-            '4_student_by_id'          => $firstCall ? \App\Models\Student::where('id', $firstCall->student_id)->first()?->toArray() : null,
-            '5_sample_students_photos' => \App\Models\Student::whereNotNull('profile_photo_path')->take(3)->get(['id', 'user_id', 'profile_photo_path'])->toArray(),
-        ]);
 
         // 1. جمع معرفات المكالمات الظاهرة في الصفحة الحالية
         $callIds = $calls->pluck('id');
@@ -65,35 +55,20 @@ public function index()
             ->pluck('reportable_id')
             ->toArray();
 
-        // 3. جمع كل معرّفات الطلاب في الصفحة لجلب صورهم دفعة واحدة
-        $studentIds = $calls->pluck('student_id')->filter()->unique();
-        
-        $studentsData = \App\Models\Student::whereIn('user_id', $studentIds)
-            ->orWhereIn('id', $studentIds)
-            ->get();
+        // 3. جلب صور الطلاب دفعة واحدة في مصفوفة [user_id => profile_photo_path]
+        $studentUserIds = $calls->pluck('student_id')->filter()->unique();
+        $studentPhotos = \App\Models\Student::whereIn('user_id', $studentUserIds)
+            ->pluck('profile_photo_path', 'user_id');
 
         // Transform list for a cleaner overview
-        $calls->getCollection()->transform(function ($call) use ($reportedCallIds, $studentsData) {
+        $calls->getCollection()->transform(function ($call) use ($reportedCallIds, $studentPhotos) {
             $rating = $call->ratings->first();
-
-            $studentRecord = $studentsData->first(function ($st) use ($call) {
-                return $st->user_id == $call->student_id || $st->id == $call->student_id;
-            });
-
-            $photoPath = $studentRecord?->profile_photo_path 
-                      ?? $call->student?->profile_photo_path;
-
-            $imageUrl = null;
-            if (!empty($photoPath)) {
-                $imageUrl = filter_var($photoPath, FILTER_VALIDATE_URL) 
-                    ? $photoPath 
-                    : asset('storage/' . ltrim($photoPath, '/'));
-            }
+            $photoPath = $studentPhotos->get($call->student_id);
 
             return [
                 'id'                => $call->id,
                 'student_name'      => optional($call->student)->name ?? 'طالب',
-                'student_image_url' => $imageUrl,
+                'student_image_url' => $photoPath ? asset('storage/' . $photoPath) : null,
                 'status'            => $call->status,
                 'duration_minutes'  => $call->duration_minutes,
                 'date'              => $call->created_at->format('Y-m-d'),
@@ -112,8 +87,7 @@ public function index()
     } catch (\Throwable $e) {
         return response()->json([
             'status' => false,
-            'message' => 'حدث خطأ أثناء جلب سجل المكالمات.',
-            'error' => $e->getMessage()
+            'message' => 'حدث خطأ أثناء جلب سجل المكالمات.'
         ], 500);
     }
 }
