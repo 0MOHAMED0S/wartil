@@ -141,6 +141,7 @@ public function profile(Request $request)
             }
 
             $categoryData['teacher_rate'] = $teacherRate;
+        } // close if ($categoryData)
         // 4. Calculate hours spent – using total minutes from profile (all counted as foreign)
         $totalMinutes = $user->teacherProfile->minutes ?? 0;
         $hoursSpent = [
