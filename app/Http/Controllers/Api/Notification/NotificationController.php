@@ -33,7 +33,8 @@ class NotificationController extends Controller
                 $data = $notification->data;
 
                 return [
-                    'id'         => $notification->id,
+                    // Return a hyphen‑less UUID to make the ID look "normal"
+                    'id'         => str_replace('-', '', $notification->id),
                     'title'      => $data['title'] ?? 'إشعار جديد',
                     'message'    => $data['message'] ?? '',
                     'type'       => $data['type'] ?? 'general',
@@ -69,6 +70,94 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+    // Delete a single notification (student or teacher)
+    public function destroy(Request $request): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'المستخدم غير مسجل الدخول.',
+                ], 401);
+            }
+
+            // Validate notification_id
+            $notificationId = $request->input('notification_id');
+            if (empty($notificationId) || !is_numeric($notificationId)) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'معرّف الإشعار غير صالح.',
+                ], 422);
+            }
+
+            $notification = $user->notifications()->where('id', $notificationId)->first();
+            if (!$notification) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'الإشعار غير موجود أو لا يخص المستخدم.',
+                ], 404);
+            }
+
+            $notification->delete();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'تم حذف الإشعار بنجاح.',
+                'data'    => [
+                    'unread_count' => $user->unreadNotifications()->count(),
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Delete Notification Error', [
+                'user_id' => optional(auth()->user())->id,
+                'error'   => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => 'حدث خطأ أثناء حذف الإشعار.',
+            ], 500);
+        }
+    }
+
+    // Delete all notifications for the authenticated user (student or teacher)
+    public function destroyAll(Request $request): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'المستخدم غير مسجل الدخول.',
+                ], 401);
+            }
+
+            $user->notifications()->delete();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'تم حذف جميع الإشعارات بنجاح.',
+                'data'    => [
+                    'unread_count' => 0,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Delete All Notifications Error', [
+                'user_id' => optional(auth()->user())->id,
+                'error'   => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'status'  => false,
+                'message' => 'حدث خطأ أثناء حذف جميع الإشعارات.',
+            ], 500);
+        }
+    }
+    
 
     public function markAsRead(Request $request): JsonResponse
     {
