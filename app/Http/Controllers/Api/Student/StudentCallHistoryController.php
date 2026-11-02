@@ -35,6 +35,9 @@ class StudentCallHistoryController extends Controller
                 'recording_url' => $call->recording_url,
                 'is_rated' => (bool)$rating,
                 'rating_stars' => $rating ? $rating->rating : null,
+                'is_reported' => TeacherReport::where('reportable_type', CallSession::class)
+                                            ->where('reportable_id', $call->id)
+                                            ->exists(),
             ];
         });
 
