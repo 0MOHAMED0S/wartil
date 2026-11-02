@@ -106,8 +106,8 @@ class TeacherAuthController extends Controller
             $categoryData = $category ? $category->toArray() : null;
 
             if ($categoryData) {
-                $teacherRate = $category->foreign_rate; // Default fallback
-                $region = 'foreign';
+                $teacherRate = $category->egypt_rate; // Default fallback (assume Egyptian)
+                $region = 'egypt';
                 $ip = $request->ip();
                 if ($ip) {
                     $ipCountryCode = GeoIPService::getCountryCode($ip);
@@ -159,6 +159,7 @@ class TeacherAuthController extends Controller
 
 
                 $categoryData['teacher_rate'] = $teacherRate;
+                $clientCountryCode = $ipCountryCode ?? null;
             }
 
             return response()->json([
