@@ -9,6 +9,7 @@ use App\Models\CallSession;
 use App\Services\AgoraService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Models\TeacherReport;
 
 class StudentBookingController extends Controller
 {
@@ -60,6 +61,7 @@ class StudentBookingController extends Controller
                     'session_record' => [
                         'recording_url' => optional($callSession)->recording_url,
                         'is_available'  => !empty(optional($callSession)->recording_url),
+                        'is_reported'   => TeacherReport::where('reportable_type', CallSession::class)->where('reportable_id', optional($callSession)->id)->exists(),
                     ],
                     'is_past' => $isPast
                 ];
@@ -175,6 +177,7 @@ class StudentBookingController extends Controller
                     'teacher_name'  => optional($teacher->user)->name ?? 'معلم ورتل',
                     'status'        => $booking->status,
                     'recording_url' => optional($callSession)->recording_url, // 🚀 رابط التسجيل
+                    'is_reported'   => TeacherReport::where('reportable_type', CallSession::class)->where('reportable_id', optional($callSession)->id)->exists(),
                     'duration'      => optional($callSession)->duration_minutes,
                 ];
             });
