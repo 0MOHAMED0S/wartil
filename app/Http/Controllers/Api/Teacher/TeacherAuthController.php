@@ -144,9 +144,9 @@ public function profile(Request $request)
         } // 4. Calculate hours spent per region
         $regionMinutes = $this->calculateRegionMinutes($user);
         $hoursSpent = [
-            'egyptian_hours' => $regionMinutes['egypt'],
-            'arab_hours' => $regionMinutes['arab'],
-            'foreign_hours' => $regionMinutes['foreign'],
+            'egyptian_minutes' => $regionMinutes['egypt'],
+            'arab_minutes' => $regionMinutes['arab'],
+            'foreign_minutes' => $regionMinutes['foreign'],
         ];
 
         return response()->json([
