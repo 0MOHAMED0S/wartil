@@ -334,4 +334,46 @@ class StudentBookingController extends Controller
             return response()->json(['status' => false, 'message' => 'حدث خطأ أثناء محاولة المغادرة.'], 500);
         }
     }
+    /**
+     * Get report status for a specific booking.
+     */
+    public function getByBooking(Request $request, $bookingId)
+    {
+        try {
+            $user = $request->user();
+
+            $booking = SlotBooking::where('id', $bookingId)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (! $booking) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'الحجز غير موجود أو لا يخص الطالب.',
+                ], 404);
+            }
+
+            $isReported = TeacherReport::where('reportable_type', SlotBooking::class)
+                ->where(function ($q) use ($booking) {
+                    $q->where('reportable_id', $booking->id)
+                        ->orWhere('reportable_id', $booking->slot_id);
+                })
+                ->exists();
+
+            return response()->json([
+                'status' => true,
+                'data' => [
+                    'booking_id' => $booking->id,
+                    'is_reported' => $isReported,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Get Booking Report Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ أثناء جلب حالة التقرير.',
+            ], 500);
+        }
+    }
 }
+
