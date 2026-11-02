@@ -201,6 +201,7 @@ Route::prefix('student')->middleware('throttle:60,1')->group(function () {
         Route::get('/reports', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'myReports']);
         Route::get('/reports/dependents/{id}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'dependentReports']);
         Route::get('/reports/call/{callId}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'getByCall']);
+        Route::get('/bookings/{bookingId}/report', [\App\Http\Controllers\Api\Student\StudentBookingController::class, 'bookingReportStatus']);
         Route::get('/reports/{reportId}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'show']);
         
     });
