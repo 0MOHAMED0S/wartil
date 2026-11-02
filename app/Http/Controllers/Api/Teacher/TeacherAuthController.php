@@ -142,7 +142,9 @@ class TeacherAuthController extends Controller
                         'name'  => $user->name,
                         'email' => $user->email,
                     ],
-                    'profile' => $user->teacherProfile,
+                    // Return a cleaned profile without redundant relationships
+                    'profile' => $user->teacherProfile->makeHidden(['application', 'category']),
+                    // Provide category and tracks separately
                     'category' => $categoryData,
                     'tracks'  => $user->teacherProfile->application?->tracks ?? [],
                 ]
