@@ -141,12 +141,12 @@ public function profile(Request $request)
             }
 
             $categoryData['teacher_rate'] = $teacherRate;
-        } // 4. Calculate hours spent per region
-        $regionMinutes = $this->calculateRegionMinutes($user);
+        // 4. Calculate hours spent – using total minutes from profile (all counted as foreign)
+        $totalMinutes = $user->teacherProfile->minutes ?? 0;
         $hoursSpent = [
-            'egyptian_hours' => round($regionMinutes['egypt'] / 60, 2),
-            'arab_hours'     => round($regionMinutes['arab'] / 60, 2),
-            'foreign_hours'  => round($regionMinutes['foreign'] / 60, 2),
+            'egyptian_hours' => 0,
+            'arab_hours'     => 0,
+            'foreign_hours'  => round($totalMinutes / 2000, 2),
         ];
 
         return response()->json([
