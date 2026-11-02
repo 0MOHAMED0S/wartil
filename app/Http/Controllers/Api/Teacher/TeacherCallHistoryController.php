@@ -30,6 +30,7 @@ public function index()
             ->with([
                 'student:id,name',
                 'student.student:id,profile_photo_path',
+                'student.studentProfile:id,profile_photo_path',
                 'ratings'
             ])
             ->orderBy('created_at', 'desc')
@@ -62,7 +63,7 @@ public function index()
             return [
                 'id'               => $call->id,
                 'student_name'     => optional($call->student)->name ?? 'طالب',
-                'student_image_url' => optional($call->student->student)->profile_photo_path ? asset('storage/' . $call->student->student->profile_photo_path) : null,
+                'student_image_url' => optional($call->student->student)->profile_photo_path ? asset('storage/' . $call->student->student->profile_photo_path) : (optional($call->student->studentProfile)->profile_photo_path ? asset('storage/' . $call->student->studentProfile->profile_photo_path) : null),
                 'status'           => $call->status,
                 'duration_minutes' => $call->duration_minutes,
                 'date'             => $call->created_at->format('Y-m-d'),
