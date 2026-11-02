@@ -335,14 +335,14 @@ class StudentBookingController extends Controller
         }
     }
     /**
-     * Get report details for a specific booking.
+     * Get report details for a specific booking by slot ID.
      */
     public function getByBooking(Request $request, $slotId)
     {
         try {
             $user = $request->user();
 
-            // Ensure the booking belongs to the authenticated student and matches the slot ID
+            // Find the booking that belongs to the student and matches the slot ID
             $booking = SlotBooking::with(['slot.teacher.user', 'reports'])
                 ->where('slot_id', $slotId)
                 ->where('user_id', $user->id)
@@ -355,7 +355,7 @@ class StudentBookingController extends Controller
                 ], 404);
             }
 
-            // Try to fetch associated report (if any)
+            // Fetch the associated report (if any) using the booking's ID
             $report = $booking->reports()
                 ->where('reportable_type', SlotBooking::class)
                 ->where('reportable_id', $booking->id)
@@ -365,14 +365,15 @@ class StudentBookingController extends Controller
                 return response()->json([
                     'status' => true,
                     'data' => [
-                        'booking_id'  => $booking->id,
+                        'booking_id'   => $booking->id,
+                        'slot_id'      => $slotId,
                         'is_reported' => false,
-                        'report'      => null,
+                        'report'       => null,
                     ],
                 ], 200);
             }
 
-            // Build detailed report response (similar to StudentReportController format)
+            // Build detailed report response (mirroring StudentReportController format)
             $reportData = [
                 'id'               => $report->id,
                 'teacher_name'     => optional($report->teacher->user)->name ?? 'Unknown',
