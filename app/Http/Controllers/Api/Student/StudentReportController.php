@@ -7,7 +7,6 @@ use App\Models\TeacherReport;
 use App\Models\CallSession;
 use Illuminate\Http\Request;
 use App\Models\SlotBooking;
-use App\Models\TeacherReport;
 use Illuminate\Support\Facades\Log;
 
 class StudentReportController extends Controller
