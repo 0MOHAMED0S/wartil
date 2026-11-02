@@ -291,7 +291,7 @@ public function profile(Request $request)
     protected function calculateRegionMinutes(User $teacher)
     {
         $minutes = ['egypt' => 0, 'arab' => 0, 'foreign' => 0];
-        // Retrieve all call sessions for this teacher with associated student and their country
+        // Retrieve all call sessions for this teacher with associated student
         $calls = \App\Models\CallSession::where('teacher_id', $teacher->id)
             ->with('student')
             ->get();
@@ -306,7 +306,6 @@ public function profile(Request $request)
             if (method_exists($student, 'country') && $student->country) {
                 $countryCode = $student->country->code ?? null;
             }
-            // Fallback to IP lookup if country not set
             if (!$countryCode && property_exists($student, 'last_ip')) {
                 $countryCode = \App\Services\GeoIPService::getCountryCode($student->last_ip);
             }
@@ -321,6 +320,12 @@ public function profile(Request $request)
             }
             $duration = $call->duration_minutes ?? 0;
             $minutes[$region] += $duration;
+        }
+        // Use total minutes from teacher profile and assign any remainder to foreign
+        $totalMinutes = $teacher->teacherProfile->minutes ?? 0;
+        $remaining = $totalMinutes - ($minutes['egypt'] + $minutes['arab']);
+        if ($remaining > 0) {
+            $minutes['foreign'] = $remaining;
         }
         return $minutes;
     }
