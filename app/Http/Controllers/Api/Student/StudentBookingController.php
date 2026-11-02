@@ -335,14 +335,16 @@ class StudentBookingController extends Controller
         }
     }
     /**
-     * Get report status for a specific booking.
+     * Get report details for a specific booking.
      */
     public function getByBooking(Request $request, $bookingId)
     {
         try {
             $user = $request->user();
 
-            $booking = SlotBooking::where('id', $bookingId)
+            // Ensure the booking belongs to the authenticated student
+            $booking = SlotBooking::with(['slot.teacher.user', 'reports'])
+                ->where('id', $bookingId)
                 ->where('user_id', $user->id)
                 ->first();
 
@@ -353,27 +355,50 @@ class StudentBookingController extends Controller
                 ], 404);
             }
 
-            $isReported = TeacherReport::where('reportable_type', SlotBooking::class)
-                ->where(function ($q) use ($booking) {
-                    $q->where('reportable_id', $booking->id)
-                        ->orWhere('reportable_id', $booking->slot_id);
-                })
-                ->exists();
+            // Try to fetch associated report (if any)
+            $report = $booking->reports()
+                ->where('reportable_type', SlotBooking::class)
+                ->where('reportable_id', $booking->id)
+                ->first();
+
+            if (! $report) {
+                return response()->json([
+                    'status' => true,
+                    'data' => [
+                        'booking_id'  => $booking->id,
+                        'is_reported' => false,
+                        'report'      => null,
+                    ],
+                ], 200);
+            }
+
+            // Build detailed report response (similar to StudentReportController format)
+            $reportData = [
+                'id'               => $report->id,
+                'teacher_name'     => optional($report->teacher->user)->name ?? 'Unknown',
+                'teacher_id'       => $report->teacher_id,
+                'attendance_status'=> $report->attendance_status,
+                'reception_level'  => $report->reception_level,
+                'notes'            => $report->notes,
+                'session_content'  => $report->session_content,
+                'report'           => $report->report,
+                'reportable_type'  => $report->reportable_type,
+                'reportable_id'    => $report->reportable_id,
+                'created_at'       => $report->created_at ? $report->created_at->format('Y-m-d H:i:s') : null,
+                'is_reported'      => true,
+            ];
 
             return response()->json([
                 'status' => true,
-                'data' => [
-                    'booking_id' => $booking->id,
-                    'is_reported' => $isReported,
-                ],
+                'data'   => $reportData,
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Get Booking Report Error: ' . $e->getMessage());
+            Log::error('Booking Report Retrieval Error: ' . $e->getMessage());
             return response()->json([
-                'status' => false,
-                'message' => 'حدث خطأ أثناء جلب حالة التقرير.',
+                'status'  => false,
+                'message' => 'حدث خطأ أثناء جلب تقرير الحجز.',
             ], 500);
         }
     }
-}
+    }
 
