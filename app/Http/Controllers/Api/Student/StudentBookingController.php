@@ -177,7 +177,10 @@ class StudentBookingController extends Controller
                     'teacher_name'  => optional($teacher->user)->name ?? 'معلم ورتل',
                     'status'        => $booking->status,
                     'recording_url' => optional($callSession)->recording_url, // 🚀 رابط التسجيل
-                    'is_reported'   => TeacherReport::where('reportable_id', $booking->slot_id)->exists(),
+                    'is_reported'   => TeacherReport::where('reportable_type', SlotBooking::class)->where(function ($q) use ($booking) {
+                        $q->where('reportable_id', $booking->slot_id)
+                          ->orWhere('reportable_id', $booking->id);
+                    })->exists(),
                     'duration'      => optional($callSession)->duration_minutes,
                 ];
             });
