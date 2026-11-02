@@ -28,8 +28,7 @@ public function index()
 
         $calls = CallSession::where('teacher_id', $teacher->id)
             ->with([
-                'student:id,name',
-                'student.student:id,user_id,profile_photo_path', // 👈 تم إضافة user_id هنا (إجباري لنجاح الربط)
+                'student', // جلب بيانات علاقة الطالب كاملة بدون تقييد الأعمدة لتجنب فشل الربط
                 'ratings'
             ])
             ->orderBy('created_at', 'desc')
@@ -56,18 +55,39 @@ public function index()
             ->pluck('reportable_id')
             ->toArray();
 
+        // 3. جمع كل معرّفات الطلاب في الصفحة لجلب صورهم دفعة واحدة بشكل مضمون
+        $studentIds = $calls->pluck('student_id')->filter()->unique();
+        
+        // جلب سجلات الطلاب سواء كان student_id يشير إلى user_id أو id في جدول students
+        $studentsData = \App\Models\Student::whereIn('user_id', $studentIds)
+            ->orWhereIn('id', $studentIds)
+            ->get();
+
         // Transform list for a cleaner overview
-        $calls->getCollection()->transform(function ($call) use ($reportedCallIds) {
+        $calls->getCollection()->transform(function ($call) use ($reportedCallIds, $studentsData) {
             $rating = $call->ratings->first();
-            
-            // جلب مسار الصورة بأمان من علاقة الطالب (مع عمل استعلام احتياطي في حال كان اسم العلاقة مختلفاً)
-            $photoPath = $call->student?->student?->profile_photo_path 
-                      ?? ($call->student ? \App\Models\Student::where('user_id', $call->student->id)->value('profile_photo_path') : null);
+
+            // البحث عن سجل الطالب بطريقتين (سواء عبر user_id أو id)
+            $studentRecord = $studentsData->first(function ($st) use ($call) {
+                return $st->user_id == $call->student_id || $st->id == $call->student_id;
+            });
+
+            // استخراج مسار الصورة من كل الأماكن المحتملة
+            $photoPath = $studentRecord?->profile_photo_path 
+                      ?? $call->student?->profile_photo_path;
+
+            // تجهيز الرابط النهائي (يدعم الروابط الكاملة أو المسارات المخزنة)
+            $imageUrl = null;
+            if (!empty($photoPath)) {
+                $imageUrl = filter_var($photoPath, FILTER_VALIDATE_URL) 
+                    ? $photoPath 
+                    : asset('storage/' . ltrim($photoPath, '/'));
+            }
 
             return [
                 'id'                => $call->id,
                 'student_name'      => optional($call->student)->name ?? 'طالب',
-                'student_image_url' => $photoPath ? asset('storage/' . $photoPath) : null,
+                'student_image_url' => $imageUrl,
                 'status'            => $call->status,
                 'duration_minutes'  => $call->duration_minutes,
                 'date'              => $call->created_at->format('Y-m-d'),
