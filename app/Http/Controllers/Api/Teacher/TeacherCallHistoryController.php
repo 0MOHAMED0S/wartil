@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\CallSession;
 use Illuminate\Http\Request;
+use App\Models\TeacherReport;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 
