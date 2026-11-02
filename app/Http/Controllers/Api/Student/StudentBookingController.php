@@ -177,7 +177,6 @@ class StudentBookingController extends Controller
                     'teacher_name'  => optional($teacher->user)->name ?? 'معلم ورتل',
                     'status'        => $booking->status,
                     'recording_url' => optional($callSession)->recording_url, // 🚀 رابط التسجيل
-                    'is_reported'   => $callSession ? TeacherReport::where('reportable_type', CallSession::class)->where('reportable_id', $callSession->id)->exists() : false,
                     'duration'      => optional($callSession)->duration_minutes,
                 ];
             });
