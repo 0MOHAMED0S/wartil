@@ -31,4 +31,8 @@ class SlotBooking extends Model
     {
         return $this->morphMany(Rating::class, 'rateable');
     }
+    public function reports()
+{
+    return $this->morphMany(TeacherReport::class, 'reportable');
+}
 }
