@@ -81,55 +81,89 @@ public function index()
     ]);
 }
 
-    public function show($id)
-    {
-        $studentId = auth()->id();
+public function show($id)
+{
+    $studentId = auth()->id();
 
-        $call = CallSession::where('student_id', $studentId)
-            ->with([
-                'teacher.user:id,name',
-                'teacher.application:id,full_name,profile_photo_path,qualification',
-                'ratings' => function ($query) use ($studentId) {
-                    $query->where('user_id', $studentId);
-                }
-            ])
-            ->findOrFail($id);
+    $call = CallSession::where('student_id', $studentId)
+        ->with([
+            'teacher.user:id,name',
+            'teacher.application', // جلب كامل علاقة الطلب لتجنب فشل الربط بسبب نقص المفاتيح الأجنبية
+            'ratings' => function ($query) use ($studentId) {
+                $query->where('user_id', $studentId);
+            }
+        ])
+        ->findOrFail($id);
 
-        $rating = $call->ratings->first();
+    $rating = $call->ratings->first();
 
-        return response()->json([
-            'status' => true,
-            'data'   => [
-                'call_id' => $call->id,
-                'status'  => $call->status,
+    // 1. جلب صورة الطالب المسجل دخوله
+    $studentPhotoPath = \App\Models\Student::where('user_id', $studentId)->value('profile_photo_path');
+    $studentImageUrl = $studentPhotoPath 
+        ? (filter_var($studentPhotoPath, FILTER_VALIDATE_URL) ? $studentPhotoPath : asset('storage/' . ltrim($studentPhotoPath, '/'))) 
+        : null;
 
-                'teacher' => [
-                    'id'            => $call->teacher_id,
-                    'name'          => $call->teacher->user->name ?? $call->teacher->application->full_name ?? 'N/A',
-                    'photo'         => $call->teacher->application->profile_photo_path ? asset('storage/' . $call->teacher->application->profile_photo_path) : null,
-                    'qualification' => $call->teacher->application->qualification ?? null,
-                ],
+    // 2. جلب صورة المعلم بأمان من جدول المعلم أو طلب الانضمام
+    $teacherPhotoPath = $call->teacher?->application?->profile_photo_path 
+                     ?? $call->teacher?->profile_photo_path;
+    $teacherImageUrl = $teacherPhotoPath 
+        ? (filter_var($teacherPhotoPath, FILTER_VALIDATE_URL) ? $teacherPhotoPath : asset('storage/' . ltrim($teacherPhotoPath, '/'))) 
+        : null;
 
-                'session_details' => [
-                    'channel_name'     => $call->channel_name,
-                    'duration_minutes' => $call->duration_minutes,
-                    'recording_url'    => $call->recording_url,
-                    'is_reported' => TeacherReport::where('reportable_type', CallSession::class)->where('reportable_id', $call->id)->exists(),
-                    'timeline' => [
-                        'requested_at' => $call->created_at->format('Y-m-d H:i:s'),
-                        'started_at'   => $call->started_at ? $call->started_at->format('H:i:s') : null,
-                        'ended_at'     => $call->ended_at ? $call->ended_at->format('H:i:s') : null,
-                        'date'         => $call->created_at->format('Y-m-d'),
-                    ]
-                ],
+    // 3. جلب التقرير الخاص بهذه المكالمة (إن وُجد)
+    $report = \App\Models\TeacherReport::where('reportable_id', $call->id)
+        ->where(function ($query) {
+            $query->where('reportable_type', CallSession::class)
+                  ->orWhere('reportable_type', 'App\Models\CallSession')
+                  ->orWhere('reportable_type', 'CallSession');
+        })
+        ->first();
 
-                'rating' => $rating ? [
-                    'id'         => $rating->id,
-                    'stars'      => $rating->rating,
-                    'comment'    => $rating->comment,
-                    'created_at' => $rating->created_at->format('Y-m-d H:i:s'),
-                ] : null,
-            ]
-        ]);
-    }
+    return response()->json([
+        'status' => true,
+        'data'   => [
+            'call_id'           => $call->id,
+            'status'            => $call->status,
+            'student_image_url' => $studentImageUrl, // 🧑‍🎓 رابط صورة الطالب
+
+            'teacher' => [
+                'id'            => $call->teacher_id,
+                'name'          => $call->teacher?->user?->name ?? $call->teacher?->application?->full_name ?? 'N/A',
+                'photo'         => $teacherImageUrl, // 👨‍🏫 رابط صورة المعلم
+                'qualification' => $call->teacher?->application?->qualification ?? null,
+            ],
+
+            'session_details' => [
+                'channel_name'     => $call->channel_name,
+                'duration_minutes' => $call->duration_minutes,
+                'recording_url'    => $call->recording_url,
+                'is_reported'      => (bool) $report,
+                'timeline' => [
+                    'requested_at' => $call->created_at->format('Y-m-d H:i:s'),
+                    'started_at'   => $call->started_at ? $call->started_at->format('H:i:s') : null,
+                    'ended_at'     => $call->ended_at ? $call->ended_at->format('H:i:s') : null,
+                    'date'         => $call->created_at->format('Y-m-d'),
+                ]
+            ],
+
+            // 📄 بيانات التقرير (تظهر تفاصيله إذا كان موجوداً، أو null إذا لم يُرفع تقرير بعد)
+            'report' => $report ? [
+                'id'                => $report->id,
+                'attendance_status' => $report->attendance_status,
+                'reception_level'   => $report->reception_level,
+                'notes'             => $report->notes,
+                'session_content'   => $report->session_content,
+                'report_text'       => $report->report,
+                'created_at'        => $report->created_at ? $report->created_at->format('Y-m-d H:i:s') : null,
+            ] : null,
+
+            'rating' => $rating ? [
+                'id'         => $rating->id,
+                'stars'      => $rating->rating,
+                'comment'    => $rating->comment,
+                'created_at' => $rating->created_at->format('Y-m-d H:i:s'),
+            ] : null,
+        ]
+    ]);
+}
 }
