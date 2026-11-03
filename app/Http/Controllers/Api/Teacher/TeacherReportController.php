@@ -16,8 +16,15 @@ class TeacherReportController extends Controller
     /**
      * Submit a report for a student after a session/call
      */
-    public function store(Request $request)
-    {
+// تأكد من وجود هذه السطور في أعلى ملف الـ Controller:
+// use App\Models\TeacherReport;
+// use App\Models\CallSession;
+// use App\Models\SlotBooking;
+// use App\Models\Session_student;
+
+public function store(Request $request)
+{
+    try {
         $teacher = auth()->user()->teacher;
 
         if (!$teacher) {
@@ -25,19 +32,30 @@ class TeacherReportController extends Controller
         }
 
         $validated = $request->validate([
-            'student_id' => 'required|exists:users,id',
-            'reportable_id' => 'nullable|integer',
-            'reportable_type' => 'nullable|string|in:call,slot,session',
+            'student_id'        => 'required|integer',
+            'reportable_id'     => 'nullable|integer',
+            'reportable_type'   => 'nullable|string|in:call,slot,session',
             'attendance_status' => 'required|string|in:present,absent',
-            'reception_level' => 'nullable|string|in:excellent,very_good,good,needs_follow_up',
-            'notes' => 'nullable|string',
-            'session_content' => 'nullable|string',
+            'reception_level'   => 'nullable|string|in:excellent,very_good,good,needs_follow_up',
+            'notes'             => 'nullable|string',
+            'session_content'   => 'nullable|string',
         ]);
 
+        // التأكد من أن student_id هو user_id الصحيح في جدول users (سواء أرسل الفرونت user_id أو student.id)
+        $studentUserId = \App\Models\User::where('id', $validated['student_id'])->value('id')
+                      ?? \App\Models\Student::where('id', $validated['student_id'])->value('user_id');
+
+        if (!$studentUserId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'الطالب غير موجود.'
+            ], 422);
+        }
+
         $typeMap = [
-            'call'    => CallSession::class,
-            'slot'    => SlotBooking::class,
-            'session' => Session_student::class,
+            'call'    => \App\Models\CallSession::class,
+            'slot'    => \App\Models\SlotBooking::class,
+            'session' => \App\Models\Session_student::class,
         ];
 
         $reportableType = null;
@@ -48,24 +66,53 @@ class TeacherReportController extends Controller
         // Backward compatibility: set report text
         $legacyReportText = $validated['notes'] ?? ($validated['session_content'] ?? 'Session Report');
 
-        $report = TeacherReport::create([
-            'teacher_id' => $teacher->id,
-            'student_id' => $validated['student_id'],
-            'reportable_id' => $validated['reportable_id'] ?? null,
-            'reportable_type' => $reportableType,
+        $reportData = [
+            'teacher_id'        => $teacher->id,
+            'student_id'        => $studentUserId,
+            'reportable_id'     => $validated['reportable_id'] ?? null,
+            'reportable_type'   => $reportableType,
             'attendance_status' => $validated['attendance_status'],
-            'reception_level' => $validated['reception_level'] ?? null,
-            'notes' => $validated['notes'] ?? null,
-            'session_content' => $validated['session_content'] ?? null,
-            'report' => $legacyReportText, 
-        ]);
+            'reception_level'   => $validated['reception_level'] ?? null,
+            'notes'             => $validated['notes'] ?? null,
+            'session_content'   => $validated['session_content'] ?? null,
+            'report'            => $legacyReportText,
+        ];
+
+        // إذا كان التقرير مرتبطاً بمكالمة أو حصة محددة، نستخدم updateOrCreate لمنع تكرار التقارير لنفس الجلسة
+        if (!empty($validated['reportable_id']) && $reportableType) {
+            $report = TeacherReport::updateOrCreate(
+                [
+                    'teacher_id'      => $teacher->id,
+                    'student_id'      => $studentUserId,
+                    'reportable_id'   => $validated['reportable_id'],
+                    'reportable_type' => $reportableType,
+                ],
+                $reportData
+            );
+        } else {
+            $report = TeacherReport::create($reportData);
+        }
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'تم رفع التقرير بنجاح',
-            'data' => $report
+            'data'    => $report
         ], 201);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'بيانات غير صالحة.',
+            'errors'  => $e->errors(),
+        ], 422);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'حدث خطأ أثناء حفظ التقرير.',
+            'error'   => config('app.debug') ? $e->getMessage() : null,
+        ], 500);
     }
+}
 
     // Get report for a specific call (if exists)
     public function getByCall(Request $request, $callId): JsonResponse
