@@ -421,60 +421,87 @@ class TeacherSessionController extends Controller
             ], 500);
         }
     }
+public function getStudentSessionHistory(Request $request)
+{
+    try {
+        $userId = auth()->id();
+        $perPage = $request->query('per_page', 10);
 
-    public function getStudentSessionHistory(Request $request)
-    {
-        try {
-            $userId = auth()->id();
-            $perPage = $request->query('per_page', 10);
-            $history = RecitationSession::where('status', 'ended')
-                ->whereHas('attendees', function ($query) use ($userId) {
+        $history = RecitationSession::where('status', 'ended')
+            ->whereHas('attendees', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->with([
+                'teacher.user',
+                'teacher.application',
+                'attendees' => function ($query) use ($userId) {
                     $query->where('user_id', $userId);
-                })
-                ->with(['teacher.user', 'attendees' => function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                }])
-                ->orderBy('start_at', 'desc') // الأحدث أولاً
-                ->paginate($perPage);
-            $history->getCollection()->transform(function ($session) {
-                $attendance = $session->attendees->first();
-                $teacher = $session->teacher;
-                $teacherUser = optional($teacher)->user;
-                $teacherName = $teacherUser->name ?? 'معلم ورتل';
+                }
+            ])
+            ->orderBy('start_at', 'desc') // الأحدث أولاً
+            ->paginate($perPage);
 
-                return [
-                    'id'                => $session->id,
-                    'title'             => $session->title,
-                    'teacher_name'      => $teacherName,
-                    'teacher_avatar'    => ($teacher && $teacher->profile_photo_path)
-                        ? asset('storage/' . $teacher->profile_photo_path)
-                        : 'https://ui-avatars.com/api/?name=' . urlencode($teacherName) . '&background=0d9488&color=fff',
-                    'start_at'          => $session->start_at->format('Y-m-d H:i:s'),
-                    'end_at'            => $session->end_at->format('Y-m-d H:i:s'),
-                    'recording_url'     => $session->recording_url,
-                    'is_reported'      => TeacherReport::where('reportable_type', RecitationSession::class)->where('reportable_id', $session->id)->exists(),
-                    'my_attendance'     => [
-                        'joined_at'        => optional($attendance)->joined_at ? $attendance->joined_at->format('H:i:s') : null,
-                        'left_at'          => optional($attendance)->left_at ? $attendance->left_at->format('H:i:s') : null,
-                        'duration_minutes' => (optional($attendance)->joined_at && optional($attendance)->left_at)
-                            ? round($attendance->joined_at->diffInMinutes($attendance->left_at), 2)
-                            : 0,
-                    ]
-                ];
-            });
+        // 1. جلب صورة الطالب المسجل دخوله مرة واحدة فقط خارج الحلقة
+        $studentPhotoPath = \App\Models\Student::where('user_id', $userId)->value('profile_photo_path');
+        $studentImageUrl = $studentPhotoPath
+            ? (filter_var($studentPhotoPath, FILTER_VALIDATE_URL) ? $studentPhotoPath : asset('storage/' . ltrim($studentPhotoPath, '/')))
+            : null;
 
-            return response()->json([
-                'status'  => true,
-                'message' => 'تم استرجاع سجل الحصص بنجاح.',
-                'data'    => $history
-            ]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error("Get Student History Error: " . $e->getMessage());
-            return response()->json([
-                'status'  => false,
-                'message' => 'فشل جلب سجل الحصص.',
-                'error'   => config('app.debug') ? $e->getMessage() : null
-            ], 500);
-        }
+        // 2. جلب معرفات الجلسات المُبلغ عنها دفعة واحدة لتحسين الأداء
+        $sessionIds = $history->pluck('id');
+        $reportedSessionIds = TeacherReport::whereIn('reportable_id', $sessionIds)
+            ->where(function ($query) {
+                $query->where('reportable_type', RecitationSession::class)
+                      ->orWhere('reportable_type', \App\Models\Session_student::class)
+                      ->orWhere('reportable_type', 'App\Models\RecitationSession')
+                      ->orWhere('reportable_type', 'App\Models\Session_student');
+            })
+            ->pluck('reportable_id')
+            ->toArray();
+
+        $history->getCollection()->transform(function ($session) use ($studentImageUrl, $reportedSessionIds) {
+            $attendance = $session->attendees->first();
+            $teacher = $session->teacher;
+            $teacherUser = optional($teacher)->user;
+            $teacherName = $teacherUser->name ?? 'معلم ورتل';
+
+            // فحص مسار صورة المعلم سواء في جدول المعلم أو طلب الانضمام
+            $teacherPhotoPath = $teacher?->profile_photo_path ?? $teacher?->application?->profile_photo_path;
+
+            return [
+                'id'                => $session->id,
+                'title'             => $session->title,
+                'teacher_name'      => $teacherName,
+                'teacher_avatar'    => $teacherPhotoPath
+                    ? (filter_var($teacherPhotoPath, FILTER_VALIDATE_URL) ? $teacherPhotoPath : asset('storage/' . ltrim($teacherPhotoPath, '/')))
+                    : 'https://ui-avatars.com/api/?name=' . urlencode($teacherName) . '&background=0d9488&color=fff',
+                'student_image_url' => $studentImageUrl, // 🧑‍🎓 رابط صورة الطالب
+                'start_at'          => $session->start_at->format('Y-m-d H:i:s'),
+                'end_at'            => $session->end_at->format('Y-m-d H:i:s'),
+                'recording_url'     => $session->recording_url,
+                'is_reported'       => in_array($session->id, $reportedSessionIds),
+                'my_attendance'     => [
+                    'joined_at'        => optional($attendance)->joined_at ? $attendance->joined_at->format('H:i:s') : null,
+                    'left_at'          => optional($attendance)->left_at ? $attendance->left_at->format('H:i:s') : null,
+                    'duration_minutes' => (optional($attendance)->joined_at && optional($attendance)->left_at)
+                        ? round($attendance->joined_at->diffInMinutes($attendance->left_at), 2)
+                        : 0,
+                ]
+            ];
+        });
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'تم استرجاع سجل الحصص بنجاح.',
+            'data'    => $history
+        ]);
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error("Get Student History Error: " . $e->getMessage());
+        return response()->json([
+            'status'  => false,
+            'message' => 'فشل جلب سجل الحصص.',
+            'error'   => config('app.debug') ? $e->getMessage() : null
+        ], 500);
     }
+}
 }
