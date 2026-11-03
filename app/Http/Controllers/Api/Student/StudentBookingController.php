@@ -141,75 +141,61 @@ class StudentBookingController extends Controller
             return response()->json(['status' => false, 'message' => 'حدث خطأ أثناء جلب البيانات.'], 500);
         }
     }
-public function getBookingsHistory(Request $request)
-{
-    try {
-        $user = auth()->user();
-        $perPage = $request->get('per_page', 10);
+    public function getBookingsHistory(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $perPage = $request->get('per_page', 10);
 
-        $history = SlotBooking::with(['slot.teacher.user', 'slot.teacher.application'])
-            ->join('teacher_slots', 'slot_bookings.teacher_slot_id', '=', 'teacher_slots.id')
-            ->where('slot_bookings.user_id', $user->id)
-            ->where(function ($query) {
-                $query->where('slot_bookings.status', 'completed')
-                    ->orWhere('teacher_slots.date', '<', now()->toDateString());
-            })
-            ->orderBy('teacher_slots.date', 'desc')
-            ->orderBy('teacher_slots.start_time', 'desc')
-            ->select('slot_bookings.*')
-            ->paginate($perPage);
+            $history = SlotBooking::with(['slot.teacher.user'])
+                ->join('teacher_slots', 'slot_bookings.teacher_slot_id', '=', 'teacher_slots.id')
+                ->where('slot_bookings.user_id', $user->id)
+                ->where(function ($query) {
+                    $query->where('slot_bookings.status', 'completed')
+                        ->orWhere('teacher_slots.date', '<', now()->toDateString());
+                })
+                ->orderBy('teacher_slots.date', 'desc')
+                ->orderBy('teacher_slots.start_time', 'desc')
+                ->select('slot_bookings.*')
+                ->paginate($perPage);
 
-        // 1. جلب صورة الطالب المسجل دخوله مرة واحدة خارج الحلقة التكرارية
-        $studentPhotoPath = \App\Models\Student::where('user_id', $user->id)->value('profile_photo_path');
-        $studentImageUrl = $studentPhotoPath
-            ? (filter_var($studentPhotoPath, FILTER_VALIDATE_URL) ? $studentPhotoPath : asset('storage/' . ltrim($studentPhotoPath, '/')))
-            : null;
+            $history->getCollection()->transform(function ($booking) use ($user) {
+                $slot = $booking->slot;
+                $teacher = $slot->teacher;
+                $slotStart = Carbon::parse($slot->date . ' ' . $slot->start_time);
 
-        $history->getCollection()->transform(function ($booking) use ($user, $studentImageUrl) {
-            $slot = $booking->slot;
-            $teacher = $slot->teacher;
-            $slotStart = Carbon::parse($slot->date . ' ' . $slot->start_time);
+                $callSession = CallSession::where('student_id', $user->id)
+                    ->where('teacher_id', $teacher->id)
+                    ->where('started_at', $slotStart->toDateTimeString())
+                    ->first();
 
-            $callSession = CallSession::where('student_id', $user->id)
-                ->where('teacher_id', $teacher->id)
-                ->where('started_at', $slotStart->toDateTimeString())
-                ->first();
+                return [
+                    'booking_id'    => $booking->id,
+                    'slot_id'       => $slot->id,
+                    'date'          => $slot->date,
+                    'time'          => $slot->start_time . ' - ' . $slot->end_time,
+                    'teacher_name'  => optional($teacher->user)->name ?? 'معلم ورتل',
+                    'status'        => $booking->status,
+                    'recording_url' => optional($callSession)->recording_url, // 🚀 رابط التسجيل
+                    'is_reported' => TeacherReport::where('reportable_type', SlotBooking::class)
+    ->where(function ($q) use ($booking, $slot) {
+        $q->where('reportable_id', $slot->id)
+          ->orWhere('reportable_id', $booking->id);
+    })->exists(),
+                    'duration'      => optional($callSession)->duration_minutes,
+                ];
+            });
 
-            // جلب صورة المعلم بأمان (في حال احتجتها أيضاً)
-            $teacherPhotoPath = $teacher?->application?->profile_photo_path ?? $teacher?->profile_photo_path;
-            $teacherImageUrl = $teacherPhotoPath
-                ? (filter_var($teacherPhotoPath, FILTER_VALIDATE_URL) ? $teacherPhotoPath : asset('storage/' . ltrim($teacherPhotoPath, '/')))
-                : null;
-
-            return [
-                'booking_id'        => $booking->id,
-                'slot_id'           => $slot->id,
-                'date'              => $slot->date,
-                'time'              => $slot->start_time . ' - ' . $slot->end_time,
-                'teacher_name'      => optional($teacher->user)->name ?? 'معلم ورتل',
-                'teacher_image_url' => $teacherImageUrl, // 👨‍🏫 رابط صورة المعلم
-                'student_image_url' => $studentImageUrl, // 🧑‍🎓 رابط صورة الطالب
-                'status'            => $booking->status,
-                'recording_url'     => optional($callSession)->recording_url, // 🚀 رابط التسجيل
-                'is_reported'       => TeacherReport::where('reportable_type', SlotBooking::class)
-                    ->where(function ($q) use ($booking, $slot) {
-                        $q->where('reportable_id', $slot->id)
-                          ->orWhere('reportable_id', $booking->id);
-                    })->exists(),
-                'duration'          => optional($callSession)->duration_minutes,
-            ];
-        });
-
-        return response()->json([
-            'status'  => true,
-            'message' => 'تم استرجاع سجل الحجوزات بنجاح.',
-            'data'    => $history
-        ], 200);
-    } catch (\Throwable $e) {
-        Log::error('Bookings History Error: ' . $e->getMessage());
-        return response()->json(['status' => false, 'message' => 'حدث خطأ أثناء جلب السجل.'], 500);
+            return response()->json([
+                'status'  => true,
+                'message' => 'تم استرجاع سجل الحجوزات بنجاح.',
+                'data'    => $history
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Bookings History Error: ' . $e->getMessage());
+            return response()->json(['status' => false, 'message' => 'حدث خطأ أثناء جلب السجل.'], 500);
+        }
     }
-}
 
     public function joinBookedSession(Request $request)
     {
