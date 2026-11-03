@@ -16,12 +16,6 @@ class TeacherReportController extends Controller
     /**
      * Submit a report for a student after a session/call
      */
-// تأكد من وجود هذه السطور في أعلى ملف الـ Controller:
-// use App\Models\TeacherReport;
-// use App\Models\CallSession;
-// use App\Models\SlotBooking;
-// use App\Models\Session_student;
-
 public function store(Request $request)
 {
     try {
@@ -33,15 +27,15 @@ public function store(Request $request)
 
         $validated = $request->validate([
             'student_id'        => 'required|integer',
-            'reportable_id'     => 'nullable|integer',
-            'reportable_type'   => 'nullable|string|in:call,slot,session',
+            'reportable_id'     => 'required|integer', // إجباري لضمان ربط التقرير بمكالمة أو حصة
+            'reportable_type'   => 'required|string|in:call,slot,session',
             'attendance_status' => 'required|string|in:present,absent',
             'reception_level'   => 'nullable|string|in:excellent,very_good,good,needs_follow_up',
             'notes'             => 'nullable|string',
             'session_content'   => 'nullable|string',
         ]);
 
-        // التأكد من أن student_id هو user_id الصحيح في جدول users (سواء أرسل الفرونت user_id أو student.id)
+        // التأكد من أن student_id هو user_id الصحيح في جدول users
         $studentUserId = \App\Models\User::where('id', $validated['student_id'])->value('id')
                       ?? \App\Models\Student::where('id', $validated['student_id'])->value('user_id');
 
@@ -58,40 +52,47 @@ public function store(Request $request)
             'session' => \App\Models\Session_student::class,
         ];
 
-        $reportableType = null;
-        if (!empty($validated['reportable_type'])) {
-            $reportableType = $typeMap[$validated['reportable_type']] ?? null;
+        $reportableType = $typeMap[$validated['reportable_type']] ?? null;
+        $reportableId   = (int) $validated['reportable_id'];
+
+        // جمع المعرفات المحتملة للحصة (سواء أرسل الفرونت booking_id أو teacher_slot_id) لمنع التكرار بأي شكل
+        $idsToCheck = [$reportableId];
+        if ($validated['reportable_type'] === 'slot') {
+            $booking = \App\Models\SlotBooking::where('id', $reportableId)
+                ->orWhere('teacher_slot_id', $reportableId)
+                ->first();
+
+            if ($booking) {
+                $idsToCheck = array_unique([$booking->id, $booking->teacher_slot_id]);
+            }
+        }
+
+        // التحقق مما إذا كان هناك تقرير مرفوع مسبقاً لنفس المكالمة أو الحصة
+        $alreadyReported = \App\Models\TeacherReport::where('reportable_type', $reportableType)
+            ->whereIn('reportable_id', $idsToCheck)
+            ->exists();
+
+        if ($alreadyReported) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'تم رفع تقرير لهذه الجلسة مسبقاً ولا يمكن إرسال أكثر من تقرير.'
+            ], 422); // يمكنك تغييره إلى 409 أو 400 حسب ما يتوقعه الفرونت إند لديك
         }
 
         // Backward compatibility: set report text
         $legacyReportText = $validated['notes'] ?? ($validated['session_content'] ?? 'Session Report');
 
-        $reportData = [
+        $report = \App\Models\TeacherReport::create([
             'teacher_id'        => $teacher->id,
             'student_id'        => $studentUserId,
-            'reportable_id'     => $validated['reportable_id'] ?? null,
+            'reportable_id'     => $reportableId,
             'reportable_type'   => $reportableType,
             'attendance_status' => $validated['attendance_status'],
             'reception_level'   => $validated['reception_level'] ?? null,
             'notes'             => $validated['notes'] ?? null,
             'session_content'   => $validated['session_content'] ?? null,
             'report'            => $legacyReportText,
-        ];
-
-        // إذا كان التقرير مرتبطاً بمكالمة أو حصة محددة، نستخدم updateOrCreate لمنع تكرار التقارير لنفس الجلسة
-        if (!empty($validated['reportable_id']) && $reportableType) {
-            $report = TeacherReport::updateOrCreate(
-                [
-                    'teacher_id'      => $teacher->id,
-                    'student_id'      => $studentUserId,
-                    'reportable_id'   => $validated['reportable_id'],
-                    'reportable_type' => $reportableType,
-                ],
-                $reportData
-            );
-        } else {
-            $report = TeacherReport::create($reportData);
-        }
+        ]);
 
         return response()->json([
             'status'  => true,
