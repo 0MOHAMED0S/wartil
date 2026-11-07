@@ -64,11 +64,24 @@ public function index(Request $request)
             // 1. معالجة الصورة الشخصية (التحقق من وجودها)
             $photoPath = null;
             if ($request->hasFile('profile_photo')) {
+                // حفظ الصورة التي رفعها الأدمن داخل مجلد المعلمين
                 $photoPath = $request->file('profile_photo')
                     ->store('teachers/photos', 'public');
             } else {
-                // خيار احتياطي: استخدام صورة الطلب الأصلية إذا لم يرفع الأدمن صورة جديدة
-                $photoPath = $application->profile_photo_path;
+                // لم يرفع صورة جديدة – نريد أن نضمن أن المسار يكون داخل "teachers/photos"
+                // إذا كانت الصورة موجودة في مسار طلب المعلم (teacher-applications/photos/...)
+                // نقوم بنقلها إلى المجلد الصحيح ونحدّث المسار.
+                if ($application->profile_photo_path &&
+                    \Illuminate\Support\Facades\Storage::disk('public')->exists($application->profile_photo_path)) {
+                    $filename = basename($application->profile_photo_path);
+                    $newPath = "teachers/photos/{$filename}";
+                    if ($application->profile_photo_path !== $newPath) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->move($application->profile_photo_path, $newPath);
+                    }
+                    $photoPath = $newPath;
+                } else {
+                    $photoPath = null;
+                }
             }
 
             // 2. إنشاء المستخدم مع تأكيد البريد الإلكتروني فوراً
