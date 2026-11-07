@@ -203,7 +203,7 @@ Route::prefix('student')->middleware('throttle:60,1')->group(function () {
         Route::get('/reports/call/{callId}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'getByCall']);
         Route::get('/reports/booking/{slot_id}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'getReportByBooking']);
         Route::get('/reports/{reportId}', [\App\Http\Controllers\Api\Student\StudentReportController::class, 'show']);
-        
+
     });
 });
 Route::get('payments/callback', [BuyPackageController::class, 'handleCallback']);
