@@ -21,12 +21,13 @@ class StudentTeacherController extends Controller
     {
         $stats = [
             'students_count' => 0,
-            'calls_count'    => 0,
-            'slots_count'    => 0,
+            'calls_count' => 0,
+            'slots_count' => 0,
             'sessions_count' => 0,
         ];
 
-        if (!$teacherId) return $stats;
+        if (!$teacherId)
+            return $stats;
 
         try {
             $callStudents = DB::table('call_sessions')
@@ -110,52 +111,52 @@ class StudentTeacherController extends Controller
                 $stats = $this->getTeacherStats($teacherId);
 
                 return [
-                    'id'               => $teacherId,
-                    'application_id'   => $application->id,
-                    'name'             => $name,
-                    'photo_url'        => $photoUrl,
-                    'is_online'        => (bool) ($profile->is_online ?? false),
+                    'id' => $teacherId,
+                    'application_id' => $application->id,
+                    'name' => $name,
+                    'photo_url' => $photoUrl,
+                    'is_online' => (bool) ($profile->is_online ?? false),
 
-                    'rating'           => (float) number_format(optional($profile)->ratings_avg_rating ?? 5.0, 1, '.', ''),
-                    'reviews_count'    => (int) (optional($profile)->ratings_count ?? 0),
+                    'rating' => (float) number_format(optional($profile)->ratings_avg_rating ?? 5.0, 1, '.', ''),
+                    'reviews_count' => (int) (optional($profile)->ratings_count ?? 0),
 
-                    'students_count'   => $stats['students_count'],
-                    'calls_count'      => $stats['calls_count'],
-                    'slots_count'      => $stats['slots_count'],
-                    'sessions_count'   => $stats['sessions_count'],
+                    'students_count' => $stats['students_count'],
+                    'calls_count' => $stats['calls_count'],
+                    'slots_count' => $stats['slots_count'],
+                    'sessions_count' => $stats['sessions_count'],
 
-                    'qualification'    => $application->qualification,
-                    'country'          => $application->origin_country,
-                    'languages'        => $application->languages,
+                    'qualification' => $application->qualification,
+                    'country' => $application->origin_country,
+                    'languages' => $application->languages,
                     'experience_years' => $application->experience_years,
-                    'specialties'      => $application->tracks->map(fn($t) => ['id' => $t->id, 'name' => $t->name]),
-                    'about'            => $application->ijazas_text,
+                    'specialties' => $application->tracks->map(fn($t) => ['id' => $t->id, 'name' => $t->name]),
+                    'about' => $application->ijazas_text,
 
-                    'reviews_details'  => optional($profile)->ratings ? $profile->ratings->map(function ($rate) {
+                    'reviews_details' => optional($profile)->ratings ? $profile->ratings->map(function ($rate) {
                         return [
-                            'id'           => $rate->id,
+                            'id' => $rate->id,
                             'student_name' => optional($rate->user)->name ?? 'طالب مجهول',
-                            'rating'       => (float) $rate->rating,
-                            'comment'      => $rate->comment,
-                            'date'         => $rate->created_at ? $rate->created_at->format('Y-m-d') : null,
+                            'rating' => (float) $rate->rating,
+                            'comment' => $rate->comment,
+                            'date' => $rate->created_at ? $rate->created_at->format('Y-m-d') : null,
                         ];
                     })->sortByDesc('id')->values() : [],
 
-                    'user_data'        => $user,
-                    'profile_data'     => $profile,
+                    'user_data' => $user,
+                    'profile_data' => $profile,
                 ];
             });
 
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'Teachers retrieved successfully.',
-                'data'    => [
-                    'teachers'   => $teachersPaginator->items(),
+                'data' => [
+                    'teachers' => $teachersPaginator->items(),
                     'pagination' => [
-                        'total'        => $teachersPaginator->total(),
-                        'per_page'     => (int) $teachersPaginator->perPage(),
+                        'total' => $teachersPaginator->total(),
+                        'per_page' => (int) $teachersPaginator->perPage(),
                         'current_page' => $teachersPaginator->currentPage(),
-                        'total_pages'  => $teachersPaginator->lastPage(),
+                        'total_pages' => $teachersPaginator->lastPage(),
                     ]
                 ]
             ]);
@@ -180,55 +181,55 @@ class StudentTeacherController extends Controller
             $stats = $this->getTeacherStats($teacher->id);
 
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'Teacher profile retrieved successfully.',
-                'data'    => [
-                    'id'               => $teacher->id,
-                    'application_id'   => $teacher->teacher_application_id,
-                    'name'             => $teacher->user->name ?? $application->full_name,
-                    'photo_url'        => $teacher->profile_photo_path ? asset('storage/' . $teacher->profile_photo_path) : null,
-                    'is_online'        => (bool) $teacher->is_online,
-                    'rating'           => (float) number_format($teacher->ratings_avg_rating ?? 5.0, 1, '.', ''),
-                    'reviews_count'    => (int) ($teacher->ratings_count ?? 0),
+                'data' => [
+                    'id' => $teacher->id,
+                    'application_id' => $teacher->teacher_application_id,
+                    'name' => $teacher->user->name ?? $application->full_name,
+                    'photo_url' => $teacher->profile_photo_path ? asset('storage/' . $teacher->profile_photo_path) : null,
+                    'is_online' => (bool) $teacher->is_online,
+                    'rating' => (float) number_format($teacher->ratings_avg_rating ?? 5.0, 1, '.', ''),
+                    'reviews_count' => (int) ($teacher->ratings_count ?? 0),
 
-                    'students_count'   => $stats['students_count'],
-                    'calls_count'      => $stats['calls_count'],
-                    'slots_count'      => $stats['slots_count'],
-                    'sessions_count'   => $stats['sessions_count'],
+                    'students_count' => $stats['students_count'],
+                    'calls_count' => $stats['calls_count'],
+                    'slots_count' => $stats['slots_count'],
+                    'sessions_count' => $stats['sessions_count'],
 
-                    'qualification'    => $application->qualification ?? null,
-                    'country'          => $application->origin_country ?? null,
-                    'languages'        => $application->languages ?? [],
+                    'qualification' => $application->qualification ?? null,
+                    'country' => $application->origin_country ?? null,
+                    'languages' => $application->languages ?? [],
                     'experience_years' => $application->experience_years ?? 0,
 
-                    'gender'             => $application->gender ?? null,
-                    'email'              => $application->email ?? null,
-                    'phone'              => $application->phone ?? null,
+                    'gender' => $application->gender ?? null,
+                    'email' => $application->email ?? null,
+                    'phone' => $application->phone ?? null,
                     'residence_location' => $application->residence_location ?? null,
-                    'work_hours'         => $application->work_hours ?? null,
-                    'online_experience'  => $application->online_experience ?? null,
-                    'internet_quality'   => $application->internet_quality ?? null,
-                    'tech_skills'        => $application->tech_skills ?? null,
-                    'cv_pdf_url'         => $application->cv_pdf_path ? asset('storage/' . $application->cv_pdf_path) : null,
+                    'work_hours' => $application->work_hours ?? null,
+                    'online_experience' => $application->online_experience ?? null,
+                    'internet_quality' => $application->internet_quality ?? null,
+                    'tech_skills' => $application->tech_skills ?? null,
+                    'cv_pdf_url' => $application->cv_pdf_path ? asset('storage/' . $application->cv_pdf_path) : null,
                     'application_status' => $application->status ?? null,
                     'ijazas_text' => $application->ijazas_text ?? null,
 
-                    'specialties'      => collect($application->tracks ?? [])->map(fn($t) => [
-                        'id'   => $t->id,
+                    'specialties' => collect($application->tracks ?? [])->map(fn($t) => [
+                        'id' => $t->id,
                         'name' => $t->name
                     ])->values(),
-                    'about'            => $application->ijazas_text ?? null,
+                    'about' => $application->ijazas_text ?? null,
 
-                    'reviews_details'  => $teacher->ratings->map(fn($rate) => [
-                        'id'           => $rate->id,
+                    'reviews_details' => $teacher->ratings->map(fn($rate) => [
+                        'id' => $rate->id,
                         'student_name' => optional($rate->user)->name ?? 'طالب مجهول',
-                        'rating'       => (int) $rate->rating,
-                        'comment'      => $rate->comment,
-                        'date'         => $rate->created_at->format('Y-m-d'),
+                        'rating' => (int) $rate->rating,
+                        'comment' => $rate->comment,
+                        'date' => $rate->created_at->format('Y-m-d'),
                     ])->sortByDesc('id')->values(),
 
-                    'user_data'        => $teacher->user,
-                    'profile_data'     => $teacher->makeHidden(['application', 'user', 'ratings'])
+                    'user_data' => $teacher->user,
+                    'profile_data' => $teacher->makeHidden(['application', 'user', 'ratings'])
                 ]
             ]);
         } catch (Exception $e) {
@@ -255,11 +256,11 @@ class StudentTeacherController extends Controller
                 ->paginate($perPage);
 
             return response()->json([
-                'status'  => true,
-                'data'    => [
-                    'calendar'   => $paginator->getCollection()->groupBy('date'),
+                'status' => true,
+                'data' => [
+                    'calendar' => $paginator->getCollection()->groupBy('date'),
                     'pagination' => [
-                        'total'        => $paginator->total(),
+                        'total' => $paginator->total(),
                         'current_page' => $paginator->currentPage(),
                     ]
                 ]
@@ -274,7 +275,7 @@ class StudentTeacherController extends Controller
             'slot_id' => 'required|exists:teacher_slots,id'
         ], [
             'slot_id.required' => 'يجب اختيار موعد للحجز.',
-            'slot_id.exists'   => 'الموعد المختار غير موجود.'
+            'slot_id.exists' => 'الموعد المختار غير موجود.'
         ]);
 
         $user = auth()->user();
@@ -288,7 +289,7 @@ class StudentTeacherController extends Controller
             }
 
             $slotStart = Carbon::parse($slot->date . ' ' . $slot->start_time);
-            $slotEnd   = Carbon::parse($slot->date . ' ' . $slot->end_time);
+            $slotEnd = Carbon::parse($slot->date . ' ' . $slot->end_time);
 
             if ($slotStart->isPast()) {
                 return response()->json(['status' => false, 'message' => 'لا يمكن حجز مواعد قديمة.'], 400);
@@ -298,7 +299,7 @@ class StudentTeacherController extends Controller
 
             $ownerId = $user->accountOwner()->id;
             $userIds = array_unique([$user->id, $ownerId]);
-            
+
             $activePackages = UserPackage::whereIn('user_id', $userIds)
                 ->whereIn('status', ['active', 'Active'])
                 ->where('remaining_minutes', '>', 0)
@@ -314,7 +315,8 @@ class StudentTeacherController extends Controller
 
             $remainingToDeduct = $duration;
             foreach ($activePackages as $package) {
-                if ($remainingToDeduct <= 0) break;
+                if ($remainingToDeduct <= 0)
+                    break;
 
                 $deduction = min($package->remaining_minutes, $remainingToDeduct);
                 $package->remaining_minutes -= $deduction;
@@ -330,12 +332,12 @@ class StudentTeacherController extends Controller
             $channelName = 'scheduled_' . $user->id . '_' . time();
 
             $booking = SlotBooking::create([
-                'user_id'          => $user->id,
-                'teacher_slot_id'  => $slot->id,
+                'user_id' => $user->id,
+                'teacher_slot_id' => $slot->id,
                 'deducted_minutes' => $duration,
-                'status'           => 'scheduled',
-                'channel_name'     => $channelName,
-                'started_at'       => $slotStart
+                'status' => 'scheduled',
+                'channel_name' => $channelName,
+                'started_at' => $slotStart
             ]);
 
             DB::commit();
@@ -344,11 +346,11 @@ class StudentTeacherController extends Controller
                 $teacher = $slot->teacher;
                 if ($teacher && $teacher->user) {
                     $notificationData = [
-                        'booking_id'   => $booking->id,
+                        'booking_id' => $booking->id,
                         'student_name' => $user->name,
-                        'date'         => $slot->date,
-                        'start_time'   => $slot->start_time,
-                        'duration'     => $duration
+                        'date' => $slot->date,
+                        'start_time' => $slot->start_time,
+                        'duration' => $duration
                     ];
 
                     broadcast(new \App\Events\NewSlotBooked($teacher->id, $notificationData));
@@ -365,18 +367,18 @@ class StudentTeacherController extends Controller
                 Log::error('Teacher Booking Notification Error: ' . $e->getMessage());
             }
             $callMock = [
-                'id'           => $booking->id,
-                'student_id'   => $user->id,
-                'teacher_id'   => $slot->teacher_id,
+                'id' => $booking->id,
+                'student_id' => $user->id,
+                'teacher_id' => $slot->teacher_id,
                 'channel_name' => $channelName,
-                'status'       => 'initiated',
-                'started_at'   => $slotStart,
+                'status' => 'initiated',
+                'started_at' => $slotStart,
             ];
 
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => "تم الحجز بنجاح. تم خصم $duration دقيقة من رصيدك.",
-                'data'    => ['booking' => $booking, 'call' => $callMock]
+                'data' => ['booking' => $booking, 'call' => $callMock]
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -390,7 +392,7 @@ class StudentTeacherController extends Controller
             'slot_id' => 'required|exists:teacher_slots,id'
         ], [
             'slot_id.required' => 'يجب تحديد الموعد المراد إلغاؤه.',
-            'slot_id.exists'   => 'الموعد المحدد غير موجود في سجلاتنا.'
+            'slot_id.exists' => 'الموعد المحدد غير موجود في سجلاتنا.'
         ]);
 
         $studentId = auth()->id();
@@ -415,7 +417,7 @@ class StudentTeacherController extends Controller
 
             if ($diffInMinutes < 90) {
                 return response()->json([
-                    'status'  => false,
+                    'status' => false,
                     'message' => 'عذراً، لا يمكن إلغاء الموعد قبل بدايته بأقل من ساعة ونصف حسب سياسة المنصة.'
                 ], 400);
             }
@@ -457,10 +459,10 @@ class StudentTeacherController extends Controller
                 $teacher = $slot->teacher;
                 if ($teacher && $teacher->user) {
                     $notificationData = [
-                        'slot_id'      => $slot->id,
+                        'slot_id' => $slot->id,
                         'student_name' => $studentName,
-                        'date'         => $slot->date,
-                        'start_time'   => $slot->start_time,
+                        'date' => $slot->date,
+                        'start_time' => $slot->start_time,
                     ];
 
                     broadcast(new \App\Events\SlotBookingCancelled($teacher->id, $notificationData));
@@ -478,7 +480,7 @@ class StudentTeacherController extends Controller
             }
 
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'تم إلغاء الموعد بنجاح، وتمت إعادة الدقائق إلى رصيدك.'
             ], 200);
         } catch (\Throwable $e) {
@@ -490,12 +492,16 @@ class StudentTeacherController extends Controller
     public function featuredTeachers(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 5);
+            $perPage = (int) $request->query('per_page', 5);
             $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
             $user = auth()->user();
             $student = $user ? $user->student : null;
+
             $teachersQuery = Teacher_application::where('status', 'approved')
-                ->whereHas('profile')
+                // شرط وجود بروفايل مع تقييمات (يستثني تلقائياً أي معلم بدون تقييمات أي تقييمه 0)
+                ->whereHas('profile', function ($query) {
+                    $query->whereHas('ratings');
+                })
                 ->with([
                     'profile' => function ($query) {
                         $query->withAvg('ratings', 'rating')
@@ -505,6 +511,7 @@ class StudentTeacherController extends Controller
                     'profile.user',
                     'tracks'
                 ]);
+
             if ($student) {
                 $age = (int) $student->age_group;
                 $studentGender = strtolower($student->gender);
@@ -516,18 +523,22 @@ class StudentTeacherController extends Controller
                     }
                 }
             }
+
             $allTeachers = $teachersQuery->get()
-                // Primary: average rating (null => 0)
-                ->sortByDesc(function ($application) {
-                    return optional($application->profile)->ratings_avg_rating ?? 0;
+                // استبعاد إضافي في حالة كان متوسط التقييم 0 لأي سبب
+                ->filter(function ($application) {
+                    return (float) optional($application->profile)->ratings_avg_rating > 0;
                 })
-                // Secondary: experience years (null => 0)
-                ->sortByDesc(function ($application) {
-                    return $application->experience_years ?? 0;
-                })
+                // الترتيب: الأساسي هو متوسط التقييم، والثانوي هو سنوات الخبرة
+                ->sortByDesc([
+                    [fn($a) => (float) optional($a->profile)->ratings_avg_rating, 'desc'],
+                    [fn($a) => (int) ($a->experience_years ?? 0), 'desc'],
+                ])
                 ->values();
+
             $total = $allTeachers->count();
             $paginatedItems = $allTeachers->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
             $formattedTeachers = $paginatedItems->map(function ($application) {
                 $profile = $application->profile;
                 $user = optional($profile)->user;
@@ -541,71 +552,71 @@ class StudentTeacherController extends Controller
                     : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=1a4d2e&color=fff&size=128';
 
                 $stats = $this->getTeacherStats($teacherId);
-                // If there are no ratings, return 0.0 (or null) instead of a default 5.0
+
                 $rating = optional($profile)->ratings_avg_rating !== null
                     ? (float) number_format($profile->ratings_avg_rating, 1, '.', '')
                     : 0.0;
 
                 return [
-                    'id'               => $teacherId,
-                    'application_id'   => $application->id,
-                    'name'             => $name,
-                    'photo_url'        => $photoUrl,
-                    'is_online'        => (bool) optional($profile)->is_online,
+                    'id' => $teacherId,
+                    'application_id' => $application->id,
+                    'name' => $name,
+                    'photo_url' => $photoUrl,
+                    'is_online' => (bool) optional($profile)->is_online,
 
-                    'rating'           => $rating,
-                    'reviews_count'    => (int) (optional($profile)->ratings_count ?? 0),
+                    'rating' => $rating,
+                    'reviews_count' => (int) (optional($profile)->ratings_count ?? 0),
 
-                    'students_count'   => $stats['students_count'],
-                    'calls_count'      => $stats['calls_count'],
-                    'slots_count'      => $stats['slots_count'],
-                    'sessions_count'   => $stats['sessions_count'],
+                    'students_count' => $stats['students_count'],
+                    'calls_count' => $stats['calls_count'],
+                    'slots_count' => $stats['slots_count'],
+                    'sessions_count' => $stats['sessions_count'],
 
-                    'qualification'    => $application->qualification,
-                    'country'          => $application->origin_country,
-                    'languages'        => $application->languages,
+                    'qualification' => $application->qualification,
+                    'country' => $application->origin_country,
+                    'languages' => $application->languages,
                     'experience_years' => $application->experience_years,
-                    'specialties'      => $application->tracks->map(function ($track) {
+                    'specialties' => $application->tracks->map(function ($track) {
                         return [
-                            'id'   => $track->id,
+                            'id' => $track->id,
                             'name' => $track->name,
                         ];
                     }),
-                    'about'            => $application->ijazas_text,
-                    'reviews_details'  => optional($profile)->ratings ? $profile->ratings->map(function ($rate) {
+                    'about' => $application->ijazas_text,
+                    'reviews_details' => optional($profile)->ratings ? $profile->ratings->map(function ($rate) {
                         return [
-                            'id'           => $rate->id,
+                            'id' => $rate->id,
                             'student_name' => optional($rate->user)->name ?? 'طالب مجهول',
-                            'rating'       => (float) $rate->rating,
-                            'comment'      => $rate->comment,
-                            'date'         => $rate->created_at ? $rate->created_at->format('Y-m-d') : null,
+                            'rating' => (float) $rate->rating,
+                            'comment' => $rate->comment,
+                            'date' => $rate->created_at ? $rate->created_at->format('Y-m-d') : null,
                         ];
                     })->sortByDesc('id')->take(3)->values() : [],
 
-                    'user_data'        => $user,
-                    'profile_data'     => $profile ? array_merge($profile->toArray(), [
+                    'user_data' => $user,
+                    'profile_data' => $profile ? array_merge($profile->toArray(), [
                         'average_rating' => $rating
                     ]) : null,
                 ];
             });
 
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'تم استرجاع قائمة المعلمين بنجاح.',
-                'data'    => [
-                    'teachers'   => $formattedTeachers,
+                'data' => [
+                    'teachers' => $formattedTeachers,
                     'pagination' => [
-                        'total'        => $total,
-                        'per_page'     => (int) $perPage,
+                        'total' => $total,
+                        'per_page' => (int) $perPage,
                         'current_page' => $currentPage,
-                        'total_pages'  => (int) ceil($total / $perPage) ?: 1
+                        'total_pages' => (int) ceil($total / $perPage) ?: 1
                     ]
                 ]
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Featured Teachers Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Featured Teachers Error: ' . $e->getMessage());
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'حدث خطأ تقني أثناء استرجاع بيانات المعلمين المتميزين، يرجى المحاولة لاحقاً.'
             ], 500);
         }
@@ -667,35 +678,35 @@ class StudentTeacherController extends Controller
                     : 0.0;
 
                 return [
-                    'id'               => $teacherId,
-                    'name'             => $user->name ?? $application->full_name,
-                    'photo_url'        => $profile->profile_photo_path ? asset('storage/' . $profile->profile_photo_path) : null,
-                    'is_online'        => (bool) optional($profile)->is_online,
-                    'rating'           => $rating,
-                    'reviews_count'    => (int) (optional($profile)->ratings_count ?? 0),
-                    'country'          => $application->origin_country,
+                    'id' => $teacherId,
+                    'name' => $user->name ?? $application->full_name,
+                    'photo_url' => $profile->profile_photo_path ? asset('storage/' . $profile->profile_photo_path) : null,
+                    'is_online' => (bool) optional($profile)->is_online,
+                    'rating' => $rating,
+                    'reviews_count' => (int) (optional($profile)->ratings_count ?? 0),
+                    'country' => $application->origin_country,
                     'experience_years' => $application->experience_years,
-                    'specialties'      => $application->tracks->map(fn($t) => ['id' => $t->id, 'name' => $t->name]),
+                    'specialties' => $application->tracks->map(fn($t) => ['id' => $t->id, 'name' => $t->name]),
                 ];
             });
 
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'تم جلب المعلمين في هذا المسار بنجاح.',
-                'data'    => [
-                    'teachers'   => $formattedTeachers,
+                'data' => [
+                    'teachers' => $formattedTeachers,
                     'pagination' => [
-                        'total'        => $total,
-                        'per_page'     => (int) $perPage,
+                        'total' => $total,
+                        'per_page' => (int) $perPage,
                         'current_page' => $currentPage,
-                        'total_pages'  => (int) ceil($total / $perPage) ?: 1
+                        'total_pages' => (int) ceil($total / $perPage) ?: 1
                     ]
                 ]
             ], 200);
         } catch (\Throwable $e) {
             Log::error('Filter Teachers by Track Error: ' . $e->getMessage());
             return response()->json([
-                'status'  => false,
+                'status' => false,
                 'message' => 'حدث خطأ أثناء تصفية المعلمين حسب المسار.'
             ], 500);
         }
