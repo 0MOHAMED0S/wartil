@@ -643,8 +643,18 @@ class StudentTeacherController extends Controller
                 'tracks'
             ])
                 ->get()
+                // Exclude teachers with no rating (null or 0)
+                ->filter(function ($application) {
+                    $avg = optional($application->profile)->ratings_avg_rating;
+                    return $avg !== null && $avg > 0;
+                })
+                // Sort by rating (higher first)
                 ->sortByDesc(function ($application) {
                     return optional($application->profile)->ratings_avg_rating ?? 0;
+                })
+                // Then by experience years as tie‑breaker
+                ->sortByDesc(function ($application) {
+                    return $application->experience_years ?? 0;
                 })
                 ->values();
 
