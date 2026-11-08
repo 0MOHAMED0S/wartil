@@ -73,6 +73,7 @@ class StudentTeacherController extends Controller
             $user = auth()->user();
             $student = $user ? $user->student : null;
             $query = Teacher_application::where('status', 'approved');
+            $query->whereHas('profile');
             if ($student) {
                 $age = (int) $student->age_group;
                 $studentGender = strtolower($student->gender);
@@ -96,7 +97,14 @@ class StudentTeacherController extends Controller
             ])
                 ->latest()
                 ->paginate($perPage);
-            $teachersPaginator->getCollection()->transform(function ($application) {
+            $teachersPaginator->getCollection()
+            ->filter(function ($application) {
+                $profile = $application->profile;
+                $avg = optional($profile)->ratings_avg_rating;
+                return $profile && $avg !== null && (float) $avg > 0;
+            })
+            ->values()
+            ->transform(function ($application) {
                 $profile = $application->profile;
                 $user = optional($profile)->user;
                 $teacherId = $profile->id ?? null;
