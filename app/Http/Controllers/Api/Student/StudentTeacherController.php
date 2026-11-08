@@ -517,8 +517,13 @@ class StudentTeacherController extends Controller
                 }
             }
             $allTeachers = $teachersQuery->get()
+                // Primary: average rating (null => 0)
                 ->sortByDesc(function ($application) {
-                    return optional($application->profile)->ratings_avg_rating ?? $application->experience_years ?? 0;
+                    return optional($application->profile)->ratings_avg_rating ?? 0;
+                })
+                // Secondary: experience years (null => 0)
+                ->sortByDesc(function ($application) {
+                    return $application->experience_years ?? 0;
                 })
                 ->values();
             $total = $allTeachers->count();
