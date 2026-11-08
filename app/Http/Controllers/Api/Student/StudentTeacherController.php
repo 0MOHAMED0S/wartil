@@ -117,7 +117,7 @@ class StudentTeacherController extends Controller
                     'photo_url' => $photoUrl,
                     'is_online' => (bool) ($profile->is_online ?? false),
 
-                    'rating' => (float) number_format(optional($profile)->ratings_avg_rating ?? 5.0, 1, '.', ''),
+                    'rating' => (float) number_format(optional($profile)->ratings_avg_rating ?? 0, 1, '.', ''),
                     'reviews_count' => (int) (optional($profile)->ratings_count ?? 0),
 
                     'students_count' => $stats['students_count'],
