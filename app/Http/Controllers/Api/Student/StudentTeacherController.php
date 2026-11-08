@@ -541,7 +541,10 @@ class StudentTeacherController extends Controller
                     : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=1a4d2e&color=fff&size=128';
 
                 $stats = $this->getTeacherStats($teacherId);
-                $rating = (float) number_format(optional($profile)->ratings_avg_rating ?? 5.0, 1, '.', '');
+                // If there are no ratings, return 0.0 (or null) instead of a default 5.0
+                $rating = optional($profile)->ratings_avg_rating !== null
+                    ? (float) number_format($profile->ratings_avg_rating, 1, '.', '')
+                    : 0.0;
 
                 return [
                     'id'               => $teacherId,
@@ -652,7 +655,10 @@ class StudentTeacherController extends Controller
                 $user = optional($profile)->user;
                 $teacherId = optional($profile)->id;
                 $stats = $this->getTeacherStats($teacherId);
-                $rating = (float) number_format(optional($profile)->ratings_avg_rating ?? 5.0, 1, '.', '');
+                // If there are no ratings, return 0.0 (or null) instead of a default 5.0
+                $rating = optional($profile)->ratings_avg_rating !== null
+                    ? (float) number_format($profile->ratings_avg_rating, 1, '.', '')
+                    : 0.0;
 
                 return [
                     'id'               => $teacherId,
