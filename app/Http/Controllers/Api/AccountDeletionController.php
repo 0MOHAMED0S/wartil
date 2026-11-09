@@ -59,9 +59,13 @@ class AccountDeletionController extends Controller
                     $teacher->tracks()->detach();
 
                     // Nullify foreign keys that reference the teacher
+                    // The SlotBooking model does not have a direct teacher_id column;
+                    // bookings are linked via TeacherSlot. We keep historic bookings
+                    // untouched, so no action is needed here.
+                    // $teacher->slotBookings()->update(['teacher_id' => null]);
                     $teacher->callSessions()->update(['teacher_id' => null]);
                     $teacher->ratings()->update(['teacher_id' => null]);
-                    $teacher->slotBookings()->update(['teacher_id' => null]);
+
 
                     // Soft‑delete the teacher profile
                     $teacher->delete();
