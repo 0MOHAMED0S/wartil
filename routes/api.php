@@ -29,6 +29,7 @@ use App\Http\Controllers\web\User\BuyPackageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\Api\AccountDeletionController;
 
 Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
@@ -225,4 +226,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/notifications/mark-as-read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/delete', [NotificationController::class, 'destroy']);
     Route::post('/notifications/delete-all', [NotificationController::class, 'destroyAll']);
+    Route::delete('/account', [App\Http\Controllers\Api\AccountDeletionController::class, 'destroy']);
 });
+
