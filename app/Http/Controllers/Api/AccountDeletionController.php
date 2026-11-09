@@ -53,7 +53,9 @@ class AccountDeletionController extends Controller
                 $teacher = $user->teacherProfile;
                 if ($teacher) {
                     // Detach many‑to‑many relations
-                    $teacher->favorites()->detach();
+                    // The "favorites" pivot is defined on the Student model, not on Teacher.
+                    // Delete any favorite rows that reference this teacher.
+                    DB::table('favorites')->where('teacher_id', $teacher->id)->delete();
                     $teacher->tracks()->detach();
 
                     // Nullify foreign keys that reference the teacher
