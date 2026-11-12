@@ -40,9 +40,13 @@ class AccountDeletionController extends Controller
                 $student = $user->studentProfile;
                 if ($student) {
                     // Nullify foreign keys that reference the student
-                    $student->callSessions()->update(['student_id' => null]);
-                    $student->ratings()->update(['student_id' => null]);
-                    $student->slotBookings()->update(['student_id' => null]);
+                    // Call sessions reference the student via student_id column
+                    DB::table('call_sessions')->where('student_id', $student->id)->update(['student_id' => null]);
+                    // Ratings may have a student_id column (direct rating by student)
+                    DB::table('ratings')->where('student_id', $student->id)->update(['student_id' => null]);
+                    // Slot bookings reference the user (student) via user_id column
+                    // we nullify that to keep historic bookings
+                    DB::table('slot_bookings')->where('user_id', $student->user->id)->update(['user_id' => null]);
                     // Soft‑delete the student profile
                     $student->delete();
                 }
