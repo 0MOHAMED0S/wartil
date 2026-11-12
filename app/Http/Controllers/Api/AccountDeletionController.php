@@ -42,8 +42,10 @@ class AccountDeletionController extends Controller
                     // Nullify foreign keys that reference the student
                     // Call sessions reference the student via student_id column
                     DB::table('call_sessions')->where('student_id', $student->id)->update(['student_id' => null]);
-                    // Ratings may have a student_id column (direct rating by student)
-                    DB::table('ratings')->where('student_id', $student->id)->update(['student_id' => null]);
+                    // Ratings reference the student via the `user_id` column (the rating belongs to the student user)
+                    DB::table('ratings')
+                        ->where('user_id', $student->user->id)
+                        ->update(['user_id' => null]);
                     // Slot bookings reference the user (student) via user_id column
                     // we nullify that to keep historic bookings
                     DB::table('slot_bookings')->where('user_id', $student->user->id)->update(['user_id' => null]);
