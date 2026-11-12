@@ -40,17 +40,21 @@ class AccountDeletionController extends Controller
                 $student = $user->studentProfile;
                 if ($student) {
                     // Nullify foreign keys that reference the student
-                    // Call sessions reference the student via student_id column
-                    DB::table('call_sessions')->where('student_id', $student->id)->update(['student_id' => null]);
-                    // Ratings belong to the student via the `user_id` column.
-                    // Since `user_id` cannot be null, we delete those rating records.
+                    DB::table('call_sessions')
+                        ->where('student_id', $student->id)
+                        ->update(['student_id' => null]);
+
+                    // Ratings belong to the student via the `user_id` column (NOT NULL)
                     DB::table('ratings')
-                        ->where('user_id', $student->user->id)
+                        ->where('user_id', $user->id)
                         ->delete();
-                    // Slot bookings reference the user (student) via user_id column
-                    // we nullify that to keep historic bookings
-                    DB::table('slot_bookings')->where('user_id', $student->user->id)->update(['user_id' => null]);
-                    // Soft‑delete the student profile
+
+                    // Slot bookings reference the user via `user_id` column (NOT NULL)
+                    DB::table('slot_bookings')
+                        ->where('user_id', $user->id)
+                        ->delete();
+
+                    // Soft-delete the student profile
                     $student->delete();
                 }
             }
@@ -59,22 +63,17 @@ class AccountDeletionController extends Controller
             if ($user->isTeacher()) {
                 $teacher = $user->teacherProfile;
                 if ($teacher) {
-                    // Detach many‑to‑many relations
-                    // The "favorites" pivot is defined on the Student model, not on Teacher.
-                    // Delete any favorite rows that reference this teacher.
-                    DB::table('favorites')->where('teacher_id', $teacher->id)->delete();
+                    // Detach many-to-many relations
+                    DB::table('favorites')
+                        ->where('teacher_id', $teacher->id)
+                        ->delete();
                     $teacher->tracks()->detach();
 
                     // Nullify foreign keys that reference the teacher
-                    // The SlotBooking model does not have a direct teacher_id column;
-                    // bookings are linked via TeacherSlot. We keep historic bookings
-                    // untouched, so no action is needed here.
-                    // $teacher->slotBookings()->update(['teacher_id' => null]);
                     $teacher->callSessions()->update(['teacher_id' => null]);
                     $teacher->ratings()->update(['teacher_id' => null]);
 
-
-                    // Soft‑delete the teacher profile
+                    // Soft-delete the teacher profile
                     $teacher->delete();
 
                     // Delete the teacher application (the form record)
@@ -85,7 +84,7 @@ class AccountDeletionController extends Controller
                 }
             }
 
-            // ---------- User soft‑delete ----------
+            // ---------- User soft-delete ----------
             $user->delete();
 
             DB::commit();
@@ -97,6 +96,7 @@ class AccountDeletionController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Account deletion error (user_id=' . $user->id . '): ' . $e->getMessage());
+
             return response()->json([
                 'status'  => false,
                 'message' => 'Failed to delete account.',
