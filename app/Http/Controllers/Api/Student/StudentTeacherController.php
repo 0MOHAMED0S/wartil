@@ -66,18 +66,24 @@ class StudentTeacherController extends Controller
 
         return $stats;
     }
-    public function index(Request $request)
+public function index(Request $request)
     {
         try {
             $perPage = $request->get('per_page', 10);
             $user = auth()->user();
-            $student = $user ? $user->student : null;
-            $query = Teacher_application::where('status', 'approved');
-            $query->whereHas('profile');
+            $student = $user ? ($user->student ?? $user->studentProfile) : null;
+
+            $query = Teacher_application::where('status', 'approved')
+                ->whereHas('profile', function ($q) {
+                    // Only include teachers who have ratings with avg > 0
+                    $q->whereHas('ratings');
+                });
+
             if ($student) {
-                $age = (int) $student->age_group;
-                $studentGender = strtolower($student->gender);
+                $age = (int) ($student->age_group ?? $student->age);
+                $studentGender = strtolower($student->gender ?? '');
                 if ($age > 0 && $age <= 10) {
+                    // Children 10 and under can see both male and female teachers
                 } else {
                     if ($studentGender === 'female' || $studentGender === 'girl') {
                         $query->where('gender', 'female');
@@ -86,6 +92,7 @@ class StudentTeacherController extends Controller
                     }
                 }
             }
+
             $teachersPaginator = $query->with([
                 'profile' => function ($query) {
                     $query->withAvg('ratings', 'rating')
@@ -97,80 +104,95 @@ class StudentTeacherController extends Controller
             ])
                 ->latest()
                 ->paginate($perPage);
-            $teachersPaginator->getCollection()
-            ->filter(function ($application) {
-                $profile = $application->profile;
-                $avg = optional($profile)->ratings_avg_rating;
-                return $profile && $avg !== null && (float) $avg > 0;
-            })
-            ->values()
-            ->transform(function ($application) {
-                $profile = $application->profile;
-                $user = optional($profile)->user;
-                $teacherId = $profile->id ?? null;
 
-                $name = $user->name ?? $application->full_name;
-                $photoPath = optional($profile)->profile_photo_path ?? $application->profile_photo_path;
+            // Filter and transform, then save the modified collection back into the paginator
+            $transformedCollection = $teachersPaginator->getCollection()
+                ->filter(function ($application) {
+                    $profile = $application->profile;
+                    $avg = optional($profile)->ratings_avg_rating;
+                    return $profile && $avg !== null && (float) $avg > 0;
+                })
+                ->values()
+                ->map(function ($application) {
+                    $profile = $application->profile;
+                    $user = optional($profile)->user;
+                    $teacherId = $profile->id ?? null;
 
-                $photoUrl = $photoPath
-                    ? asset('storage/' . $photoPath)
-                    : 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=1a4d2e&color=fff&size=128';
+                    $name = $user->name ?? $application->full_name;
+                    $photoPath = optional($profile)->profile_photo_path ?? $application->profile_photo_path;
 
-                $stats = $this->getTeacherStats($teacherId);
+                    if ($photoPath) {
+                        $photoUrl = filter_var($photoPath, FILTER_VALIDATE_URL)
+                            ? $photoPath
+                            : asset('storage/' . ltrim($photoPath, '/'));
+                    } else {
+                        $photoUrl = 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=1a4d2e&color=fff&size=128';
+                    }
 
-                return [
-                    'id' => $teacherId,
-                    'application_id' => $application->id,
-                    'name' => $name,
-                    'photo_url' => $photoUrl,
-                    'is_online' => (bool) ($profile->is_online ?? false),
+                    $stats = $this->getTeacherStats($teacherId);
 
-                    'rating' => (float) number_format(optional($profile)->ratings_avg_rating ?? 0, 1, '.', ''),
-                    'reviews_count' => (int) (optional($profile)->ratings_count ?? 0),
+                    return [
+                        'id'                => $teacherId,
+                        'application_id'    => $application->id,
+                        'name'              => $name,
+                        'photo_url'         => $photoUrl,
+                        'is_online'         => (bool) ($profile->is_online ?? false),
 
-                    'students_count' => $stats['students_count'],
-                    'calls_count' => $stats['calls_count'],
-                    'slots_count' => $stats['slots_count'],
-                    'sessions_count' => $stats['sessions_count'],
+                        'rating'            => (float) number_format(optional($profile)->ratings_avg_rating ?? 0, 1, '.', ''),
+                        'reviews_count'     => (int) (optional($profile)->ratings_count ?? 0),
 
-                    'qualification' => $application->qualification,
-                    'country' => $application->origin_country,
-                    'languages' => $application->languages,
-                    'experience_years' => $application->experience_years,
-                    'specialties' => $application->tracks->map(fn($t) => ['id' => $t->id, 'name' => $t->name]),
-                    'about' => $application->ijazas_text,
+                        'students_count'    => $stats['students_count'] ?? 0,
+                        'calls_count'       => $stats['calls_count'] ?? 0,
+                        'slots_count'       => $stats['slots_count'] ?? 0,
+                        'sessions_count'    => $stats['sessions_count'] ?? 0,
 
-                    'reviews_details' => optional($profile)->ratings ? $profile->ratings->map(function ($rate) {
-                        return [
-                            'id' => $rate->id,
-                            'student_name' => optional($rate->user)->name ?? 'طالب مجهول',
-                            'rating' => (float) $rate->rating,
-                            'comment' => $rate->comment,
-                            'date' => $rate->created_at ? $rate->created_at->format('Y-m-d') : null,
-                        ];
-                    })->sortByDesc('id')->values() : [],
+                        'qualification'     => $application->qualification,
+                        'country'           => $application->origin_country,
+                        'languages'         => $application->languages,
+                        'experience_years'  => (int) $application->experience_years,
+                        'specialties'       => $application->tracks->map(fn($t) => [
+                            'id'   => $t->id,
+                            'name' => $t->name,
+                        ])->values(),
+                        'about'             => $application->ijazas_text,
 
-                    'user_data' => $user,
-                    'profile_data' => $profile,
-                ];
-            });
+                        'reviews_details'   => optional($profile)->ratings ? $profile->ratings->map(function ($rate) {
+                            return [
+                                'id'           => $rate->id,
+                                'student_name' => optional($rate->user)->name ?? 'طالب مجهول',
+                                'rating'       => (float) $rate->rating,
+                                'comment'      => $rate->comment,
+                                'date'         => $rate->created_at ? $rate->created_at->format('Y-m-d') : null,
+                            ];
+                        })->sortByDesc('id')->values() : [],
+
+                        'user_data'         => $user,
+                        'profile_data'      => $profile,
+                    ];
+                });
+
+            // Attach the transformed collection back onto the paginator
+            $teachersPaginator->setCollection($transformedCollection);
 
             return response()->json([
-                'status' => true,
-                'message' => 'Teachers retrieved successfully.',
-                'data' => [
-                    'teachers' => $teachersPaginator->items(),
+                'status'  => true,
+                'message' => 'تم استرجاع قائمة المعلمين بنجاح.',
+                'data'    => [
+                    'teachers'   => $teachersPaginator->items(),
                     'pagination' => [
-                        'total' => $teachersPaginator->total(),
-                        'per_page' => (int) $teachersPaginator->perPage(),
+                        'total'        => $teachersPaginator->total(),
+                        'per_page'     => (int) $teachersPaginator->perPage(),
                         'current_page' => $teachersPaginator->currentPage(),
-                        'total_pages' => $teachersPaginator->lastPage(),
+                        'total_pages'  => $teachersPaginator->lastPage(),
                     ]
                 ]
             ]);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Index Teachers Error: ' . $e->getMessage());
-            return response()->json(['status' => false, 'message' => 'Error fetching teachers.'], 500);
+            return response()->json([
+                'status'  => false,
+                'message' => 'Error fetching teachers.'
+            ], 500);
         }
     }
     public function show($id)
