@@ -54,7 +54,8 @@ public function destroy(Request $request)
                         ->where('user_id', $user->id)
                         ->delete();
 
-                    // Soft-delete the student profile
+                    // Set student's phone to null and soft-delete the student profile
+                    $student->update(['phone' => null]);
                     $student->delete();
                 }
             }
@@ -73,21 +74,28 @@ public function destroy(Request $request)
                     $teacher->callSessions()->update(['teacher_id' => null]);
                     $teacher->ratings()->update(['teacher_id' => null]);
 
+                    // Set teacher's phone to null (if teacher table also has a phone column)
+                    if (\Schema::hasColumn($teacher->getTable(), 'phone')) {
+                        $teacher->forceFill(['phone' => null])->save();
+                    }
+
                     // Soft-delete the teacher profile
                     $teacher->delete();
 
                     // Delete the teacher application (the form record)
                     $application = $teacher->application;
                     if ($application) {
+                        if (\Schema::hasColumn($application->getTable(), 'phone')) {
+                            $application->forceFill(['phone' => null])->save();
+                        }
                         $application->delete();
                     }
                 }
             }
 
-            // ---------- User anonymization & soft-delete ----------
+            // ---------- User email update & soft-delete ----------
             $user->forceFill([
                 'email' => 'deleted_' . $user->id . '_' . time() . '_' . $user->email,
-                'phone' => null,
             ])->save();
 
             // Revoke active API tokens (if using Sanctum/Passport)
