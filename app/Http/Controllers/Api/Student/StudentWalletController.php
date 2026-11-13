@@ -111,10 +111,13 @@ class StudentWalletController extends Controller
                     ->orWhereNull('expires_at');
             })
             ->get();
+
+        // Filter out packages whose linked Package was deleted
+        $activePackages = $activePackages->filter(fn($up) => $up->package !== null);
+
         $availableMinutes = $activePackages->sum('remaining_minutes');
         $totalOriginalMinutes = $activePackages->sum(function ($up) {
-            $pkgTotal = ($up->package->base_minutes ?? 0) + ($up->package->bonus_minutes ?? 0);
-            return max($pkgTotal, $up->remaining_minutes);
+            return ($up->package->base_minutes ?? 0) + ($up->package->bonus_minutes ?? 0);
         });
         $expiredMinutes = UserPackage::whereIn('user_id', $userIds)
             ->where(function ($q) use ($now) {
@@ -133,9 +136,9 @@ class StudentWalletController extends Controller
             ->orderByRaw("CASE WHEN user_id = {$userId} THEN 1 ELSE 2 END")
             ->latest()
             ->get()
+            ->filter(fn($up) => $up->package !== null)
             ->map(function ($up) use ($now) {
-                $pkgTotal = ($up->package->base_minutes ?? 0) + ($up->package->bonus_minutes ?? 0);
-                $original = max($pkgTotal, $up->remaining_minutes);
+                $original = ($up->package->base_minutes ?? 0) + ($up->package->bonus_minutes ?? 0);
                 return [
                     'package_name'     => $up->package->name ?? 'باقة مخصصة',
                     'remaining'        => $up->remaining_minutes,
@@ -145,7 +148,7 @@ class StudentWalletController extends Controller
                     'expiry_date'      => $up->expires_at ? $up->expires_at : 'لا تنتهي',
                     'status'           => $up->status,
                 ];
-            });
+            })->values();
         return response()->json([
             'status' => true,
             'message' => 'تم استرجاع بيانات المحفظة بنجاح.',
