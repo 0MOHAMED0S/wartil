@@ -16,92 +16,100 @@ class StudentPackageController extends Controller
 public function index(Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
-            $studentProfile = $user->studentProfile;
+            $perPage = (int) $request->query('per_page', 5);
 
-            if (!$studentProfile || !$studentProfile->country) {
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'ملف الطالب أو بيانات الدولة غير موجودة.'
-                ], 404);
-            }
+            // Query teachers (or $request->user()->studentProfile->favorites() if this is the favorites controller)
+            $teachersPaginator = \App\Models\Teacher::with([
+                'user',
+                'application.tracks',
+                'ratings.user',
+            ])
+            ->withCount(['callSessions', 'slots', 'ratings'])
+            ->withAvg('ratings', 'rating')
+            ->paginate($perPage);
 
-            $country = $studentProfile->country;
-            $rate = $country->rate_to_usd ?? 1;
-            $bestSellerPackageId = \Illuminate\Support\Facades\DB::table('orders')
-                ->where('status', 'paid')
-                ->select('package_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
-                ->groupBy('package_id')
-                ->orderByDesc('total')
-                ->value('package_id');
+            $teachers = $teachersPaginator->getCollection()->map(function ($teacher) {
+                $application = $teacher->application;
+                $user = $teacher->user;
 
-            $perPage = $request->query('per_page', 10);
-            $pricingService = app(PricingEngineService::class);
-            $region = $pricingService->getStudentRegion($studentProfile);
+                // Build full photo URL
+                $rawPhoto = $teacher->profile_photo_path ?? ($application->profile_photo_path ?? null);
+                $photoUrl = null;
+                if ($rawPhoto) {
+                    $photoUrl = filter_var($rawPhoto, FILTER_VALIDATE_URL)
+                        ? $rawPhoto
+                        : asset('storage/' . ltrim($rawPhoto, '/'));
+                }
 
-            $packages = Package::where('status', 'active')
-                ->where('show_in_' . $region, true)
-                ->paginate($perPage);
+                // Calculate unique students count from call sessions
+                $studentsCount = \Illuminate\Support\Facades\DB::table('call_sessions')
+                    ->where('teacher_id', $teacher->id)
+                    ->whereNotNull('student_id')
+                    ->distinct('student_id')
+                    ->count('student_id');
 
-            $packages->getCollection()->transform(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
-
-                $originalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
-                $discountPercent = (float) ($package->discount ?? 0);
-
-                $finalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
-                    ? $originalPriceUsd * (1 - ($discountPercent / 100))
-                    : $originalPriceUsd;
-
-                $localOriginalPrice = $originalPriceUsd * $rate;
-                $localFinalPrice = $finalPriceUsd * $rate;
+                $avgRating = round((float) ($teacher->ratings_avg_rating ?? 0), 1);
+                $teacher->average_rating = $avgRating;
 
                 return [
-                    'id'                   => $package->id,
-                    'name'                 => $package->name,
-                    'description'          => $package->description,
-
-                    'base_minutes'         => $package->base_minutes,
-                    'bonus_minutes'        => $package->bonus_minutes,
-                    'validity_days'        => $package->validity_days,
-
-                    'is_best_seller'       => $package->id === $bestSellerPackageId,
-
-                    'discount_percent'     => $discountPercent,
-                    'has_discount'         => $discountPercent > 0,
-
-                    'local_original_price' => (int) round($localOriginalPrice),
-                    'local_final_price'    => (int) round($localFinalPrice),
-
-                    'original_price_usd'   => round($originalPriceUsd, 2),
-                    'final_price_usd'      => round($finalPriceUsd, 2),
-
-                    'currency_code'        => $country->currency_code,
-                    'currency_symbol'      => $country->currency_symbol,
-
-                    'display_original_price' => sprintf('%s %s', $country->currency_symbol, number_format($localOriginalPrice, 0)),
-                    'display_final_price'    => sprintf('%s %s', $country->currency_symbol, number_format($localFinalPrice, 0)),
+                    'id'               => $teacher->id,
+                    'application_id'   => $teacher->teacher_application_id,
+                    'name'             => $application->full_name ?? ($user->name ?? null),
+                    'photo_url'        => $photoUrl,
+                    'is_online'        => (bool) $teacher->is_online,
+                    'rating'           => $avgRating,
+                    'reviews_count'    => (int) ($teacher->ratings_count ?? 0),
+                    'students_count'   => $studentsCount,
+                    'calls_count'      => (int) ($teacher->call_sessions_count ?? 0),
+                    'slots_count'      => (int) ($teacher->slots_count ?? 0),
+                    'sessions_count'   => (int) ($teacher->sessions_count ?? 0),
+                    'qualification'    => $application->qualification ?? null,
+                    'country'          => $application->origin_country ?? null,
+                    'languages'        => $application->languages ?? [],
+                    'experience_years' => (int) ($application->experience_years ?? 0),
+                    'specialties'      => $application && $application->tracks
+                        ? $application->tracks->map(fn ($track) => [
+                            'id'   => $track->id,
+                            'name' => $track->name,
+                        ])->values()
+                        : [],
+                    'about'            => $application->ijazas_text ?? null,
+                    'reviews_details'  => $teacher->ratings
+                        ? $teacher->ratings->sortByDesc('id')->map(fn ($rating) => [
+                            'id'           => $rating->id,
+                            'student_name' => optional($rating->user)->name,
+                            'rating'       => (int) $rating->rating,
+                            'comment'      => $rating->comment,
+                            'date'         => optional($rating->created_at)->format('Y-m-d'),
+                        ])->values()
+                        : [],
+                    'user_data'        => $user,
+                    'profile_data'     => $teacher,
                 ];
-            })->filter()->values();
+            })->values();
 
             return response()->json([
                 'status'  => true,
-                'message' => 'تم استرجاع الباقات بنجاح.',
-                'user_country' => [
-                    'name'        => $country->name,
-                    'currency'    => $country->currency_code,
-                    'rate_to_usd' => $rate,
+                'message' => 'تم استرجاع قائمة المعلمين بنجاح.',
+                'data'    => [
+                    'teachers'   => $teachers,
+                    'pagination' => [
+                        'total'        => $teachersPaginator->total(),
+                        'per_page'     => $teachersPaginator->perPage(),
+                        'current_page' => $teachersPaginator->currentPage(),
+                        'total_pages'  => $teachersPaginator->lastPage(),
+                    ],
                 ],
-                'packages' => $packages
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('Get Packages Pagination Error', [
+            Log::error('Get Teachers Pagination Error', [
                 'user_id' => optional($request->user())->id,
-                'error'   => $e->getMessage()
+                'error'   => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status'  => false,
-                'message' => 'فشل في تحميل الباقات.'
+                'message' => 'فشل في تحميل قائمة المعلمين.',
             ], 500);
         }
     }
