@@ -81,7 +81,7 @@ class StudentPackageController extends Controller
                     'display_original_price' => sprintf('%s %s', $country->currency_symbol, number_format($localOriginalPrice, 0)),
                     'display_final_price'    => sprintf('%s %s', $country->currency_symbol, number_format($localFinalPrice, 0)),
                 ];
-            });
+            })->filter()->values();
 
             return response()->json([
                 'status'  => true,
@@ -138,6 +138,11 @@ class StudentPackageController extends Controller
             $paginatedPackages->getCollection()->transform(function ($userPackage) use ($country, $rate, $pricingService, $studentProfile) {
                 $package = $userPackage->package;
 
+                // Skip user packages whose linked package no longer exists
+                if (! $package) {
+                    return null;
+                }
+
                 $finalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
                 $discountPercent = (float) ($package->discount ?? 0);
 
@@ -185,7 +190,7 @@ class StudentPackageController extends Controller
                         'display_final_price'    => sprintf('%s %s', $currencySymbol, number_format($localFinalPrice, 0)),
                     ]
                 ];
-            });
+            })->filter()->values();
 
             return response()->json([
                 'status'  => true,
