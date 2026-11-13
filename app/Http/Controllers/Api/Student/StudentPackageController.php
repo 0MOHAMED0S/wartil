@@ -39,11 +39,11 @@ public function index(Request $request): JsonResponse
             $pricingService = app(PricingEngineService::class);
             $region = $pricingService->getStudentRegion($studentProfile);
 
-            $packagesPaginator = Package::where('status', 'active')
+            $packages = Package::where('status', 'active')
                 ->where('show_in_' . $region, true)
                 ->paginate($perPage);
 
-            $packagesList = $packagesPaginator->getCollection()->map(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
+            $transformedPackages = $packages->getCollection()->map(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
 
                 $originalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
                 $discountPercent = (float) ($package->discount ?? 0);
@@ -92,12 +92,12 @@ public function index(Request $request): JsonResponse
                         'currency'    => $country->currency_code,
                         'rate_to_usd' => $rate,
                     ],
-                    'packages'   => $packagesList,
+                    'packages'   => $transformedPackages,
                     'pagination' => [
-                        'total'        => $packagesPaginator->total(),
-                        'per_page'     => $packagesPaginator->perPage(),
-                        'current_page' => $packagesPaginator->currentPage(),
-                        'total_pages'  => $packagesPaginator->lastPage(),
+                        'total'        => $packages->total(),
+                        'per_page'     => $packages->perPage(),
+                        'current_page' => $packages->currentPage(),
+                        'total_pages'  => $packages->lastPage(),
                     ],
                 ],
             ], 200);
