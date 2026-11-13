@@ -121,11 +121,14 @@ class StudentPackageController extends Controller
                 ->with('package')->latest();
             $allUserPackages = $query->get();
 
-            $totalRemainingMinutes = $allUserPackages->sum('remaining_minutes');
-            $totalOriginalMinutes = $allUserPackages->sum(function ($up) {
+            // Filter out user packages whose linked package was deleted
+            $validUserPackages = $allUserPackages->filter(fn($up) => $up->package !== null);
+
+            $totalRemainingMinutes = $validUserPackages->sum('remaining_minutes');
+            $totalOriginalMinutes = $validUserPackages->sum(function ($up) {
                 return ($up->package->base_minutes ?? 0) + ($up->package->bonus_minutes ?? 0);
             });
-            $totalActiveRemainingMinutes = $allUserPackages
+            $totalActiveRemainingMinutes = $validUserPackages
                 ->where('status', 'active')
                 ->sum('remaining_minutes');
 
