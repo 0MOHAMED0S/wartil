@@ -55,7 +55,7 @@ public function destroy(Request $request)
                         ->delete();
 
                     // Set student's phone to null and soft-delete the student profile
-                    $student->update(['phone' => null]);
+                    DB::table('students')->where('id', $student->id)->update(['phone' => null]);
                     $student->delete();
                 }
             }
@@ -74,20 +74,15 @@ public function destroy(Request $request)
                     $teacher->callSessions()->update(['teacher_id' => null]);
                     $teacher->ratings()->update(['teacher_id' => null]);
 
-                    // Set teacher's phone to null (if teacher table also has a phone column)
-                    if (\Schema::hasColumn($teacher->getTable(), 'phone')) {
-                        $teacher->forceFill(['phone' => null])->save();
-                    }
-
                     // Soft-delete the teacher profile
                     $teacher->delete();
 
-                    // Delete the teacher application (the form record)
+                    // Clear phone on teacher application and delete it
                     $application = $teacher->application;
                     if ($application) {
-                        if (\Schema::hasColumn($application->getTable(), 'phone')) {
-                            $application->forceFill(['phone' => null])->save();
-                        }
+                        DB::table('teacher_applications')
+                            ->where('id', $application->id)
+                            ->update(['phone' => null]);
                         $application->delete();
                     }
                 }
