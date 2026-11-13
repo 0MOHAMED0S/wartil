@@ -54,8 +54,8 @@ public function destroy(Request $request)
                         ->where('user_id', $user->id)
                         ->delete();
 
-                    // Set student's phone to null and soft-delete the student profile
-                    DB::table('students')->where('id', $student->id)->update(['phone' => null]);
+                    // Clear student's phone and soft-delete the student profile
+                    DB::table('students')->where('id', $student->id)->update(['phone' => '']);
                     $student->delete();
                 }
             }
@@ -82,7 +82,7 @@ public function destroy(Request $request)
                     if ($application) {
                         DB::table('teacher_applications')
                             ->where('id', $application->id)
-                            ->update(['phone' => null]);
+                            ->update(['phone' => '']);
                         $application->delete();
                     }
                 }
