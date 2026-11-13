@@ -14,104 +14,191 @@ use App\Services\PricingEngineService;
 class StudentPackageController extends Controller
 {
 public function index(Request $request): JsonResponse
+
     {
+
         try {
+
             $user = $request->user();
+
             $studentProfile = $user->studentProfile;
 
+
+
             if (!$studentProfile || !$studentProfile->country) {
+
                 return response()->json([
+
                     'status'  => false,
+
                     'message' => 'ملف الطالب أو بيانات الدولة غير موجودة.'
+
                 ], 404);
+
             }
 
+
+
             $country = $studentProfile->country;
+
             $rate = $country->rate_to_usd ?? 1;
+
             $bestSellerPackageId = \Illuminate\Support\Facades\DB::table('orders')
+
                 ->where('status', 'paid')
+
                 ->select('package_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+
                 ->groupBy('package_id')
+
                 ->orderByDesc('total')
+
                 ->value('package_id');
 
-            $perPage = (int) $request->query('per_page', 10);
+
+
+            $perPage = $request->query('per_page', 10);
+
             $pricingService = app(PricingEngineService::class);
+
             $region = $pricingService->getStudentRegion($studentProfile);
 
+
+
             $packages = Package::where('status', 'active')
+
                 ->where('show_in_' . $region, true)
+
                 ->paginate($perPage);
 
-            $transformedPackages = $packages->getCollection()->map(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
+
+
+            $packages->getCollection()->transform(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
+
+
 
                 $originalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
+
                 $discountPercent = (float) ($package->discount ?? 0);
 
+
+
                 $finalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
-                    ? $originalPriceUsd * (1 - ($discountPercent / 100))
+
+                    ? $originalPriceUsd(
+1(
+$discountPercent / 100))
+
                     : $originalPriceUsd;
 
-                $localOriginalPrice = $originalPriceUsd * $rate;
-                $localFinalPrice = $finalPriceUsd * $rate;
+
+
+                $localOriginalPrice = $originalPriceUsd
+$rate;
+
+                $localFinalPrice = $finalPriceUsd
+$rate;
+
+
 
                 return [
-                    'id'                     => $package->id,
-                    'name'                   => $package->name,
-                    'description'            => $package->description,
 
-                    'base_minutes'           => $package->base_minutes,
-                    'bonus_minutes'          => $package->bonus_minutes,
-                    'validity_days'          => $package->validity_days,
+                    'id'                   => $package->id,
 
-                    'is_best_seller'         => $package->id === $bestSellerPackageId,
+                    'name'                 => $package->name,
 
-                    'discount_percent'       => $discountPercent,
-                    'has_discount'           => $discountPercent > 0,
+                    'description'          => $package->description,
 
-                    'local_original_price'   => (int) round($localOriginalPrice),
-                    'local_final_price'      => (int) round($localFinalPrice),
 
-                    'original_price_usd'     => round($originalPriceUsd, 2),
-                    'final_price_usd'        => round($finalPriceUsd, 2),
 
-                    'currency_code'          => $country->currency_code,
-                    'currency_symbol'        => $country->currency_symbol,
+                    'base_minutes'         => $package->base_minutes,
+
+                    'bonus_minutes'        => $package->bonus_minutes,
+
+                    'validity_days'        => $package->validity_days,
+
+
+
+                    'is_best_seller'       => $package->id === $bestSellerPackageId,
+
+
+
+                    'discount_percent'     => $discountPercent,
+
+                    'has_discount'         => $discountPercent > 0,
+
+
+
+                    'local_original_price' => (int) round($localOriginalPrice),
+
+                    'local_final_price'    => (int) round($localFinalPrice),
+
+
+
+                    'original_price_usd'   => round($originalPriceUsd, 2),
+
+                    'final_price_usd'      => round($finalPriceUsd, 2),
+
+
+
+                    'currency_code'        => $country->currency_code,
+
+                    'currency_symbol'      => $country->currency_symbol,
+
+
 
                     'display_original_price' => sprintf('%s %s', $country->currency_symbol, number_format($localOriginalPrice, 0)),
+
                     'display_final_price'    => sprintf('%s %s', $country->currency_symbol, number_format($localFinalPrice, 0)),
+
                 ];
+
             })->filter()->values();
 
-            return response()->json([
-                'status'  => true,
-                'message' => 'تم استرجاع الباقات بنجاح.',
-                'data'    => [
-                    'user_country' => [
-                        'name'        => $country->name,
-                        'currency'    => $country->currency_code,
-                        'rate_to_usd' => $rate,
-                    ],
-                    'packages'   => $transformedPackages,
-                    'pagination' => [
-                        'total'        => $packages->total(),
-                        'per_page'     => $packages->perPage(),
-                        'current_page' => $packages->currentPage(),
-                        'total_pages'  => $packages->lastPage(),
-                    ],
-                ],
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::error('Get Packages Pagination Error', [
-                'user_id' => optional($request->user())->id,
-                'error'   => $e->getMessage()
-            ]);
+
 
             return response()->json([
+
+                'status'  => true,
+
+                'message' => 'تم استرجاع الباقات بنجاح.',
+
+                'user_country' => [
+
+                    'name'        => $country->name,
+
+                    'currency'    => $country->currency_code,
+
+                    'rate_to_usd' => $rate,
+
+                ],
+
+                'packages' => $packages
+
+            ], 200);
+
+        } catch (\Throwable $e) {
+
+            Log::error('Get Packages Pagination Error', [
+
+                'user_id' => optional($request->user())->id,
+
+                'error'   => $e->getMessage()
+
+            ]);
+
+
+
+            return response()->json([
+
                 'status'  => false,
+
                 'message' => 'فشل في تحميل الباقات.'
+
             ], 500);
+
         }
+
     }
 
     public function userPackages(Request $request): JsonResponse
