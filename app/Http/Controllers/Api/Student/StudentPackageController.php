@@ -13,105 +13,108 @@ use App\Services\PricingEngineService;
 
 class StudentPackageController extends Controller
 {
-public function index(Request $request): JsonResponse
+public function index(Request $request)
     {
-        try {
-            $user = $request->user();
-            $studentProfile = $user->studentProfile;
+        $perPage = (int) $request->query('per_page', 5);
 
-            if (!$studentProfile || !$studentProfile->country) {
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'ملف الطالب أو بيانات الدولة غير موجودة.'
-                ], 404);
+        // Whether you are querying Teacher_application::with(['profile.user', 'profile.ratings.user', 'tracks'])
+        // or $student->favorites()->with(['profile.user', 'profile.ratings.user', 'tracks'])
+        $paginator = \App\Models\Teacher_application::where('status', 'approved')
+            ->with(['profile.user', 'profile.ratings.user', 'tracks'])
+            ->paginate($perPage);
+
+        $teachers = $paginator->getCollection()->map(function ($app) {
+            $profile = $app->profile;
+            if ($profile) {
+                $profile->loadCount('ratings');
+                $profile->loadAvg('ratings', 'rating');
             }
 
-            $country = $studentProfile->country;
-            $rate = $country->rate_to_usd ?? 1;
-            $bestSellerPackageId = \Illuminate\Support\Facades\DB::table('orders')
-                ->where('status', 'paid')
-                ->select('package_id', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
-                ->groupBy('package_id')
-                ->orderByDesc('total')
-                ->value('package_id');
+            $user = $profile ? $profile->user : null;
 
-            $perPage = (int) $request->query('per_page', 10);
-            $pricingService = app(PricingEngineService::class);
-            $region = $pricingService->getStudentRegion($studentProfile);
+            $rawPhoto = ($profile && $profile->profile_photo_path)
+                ? $profile->profile_photo_path
+                : $app->getRawOriginal('profile_photo_path');
 
-            $packages = Package::where('status', 'active')
-                ->where('show_in_' . $region, true)
-                ->paginate($perPage);
+            $photoUrl = $rawPhoto
+                ? (filter_var($rawPhoto, FILTER_VALIDATE_URL) ? $rawPhoto : asset('storage/' . ltrim($rawPhoto, '/')))
+                : null;
 
-            $transformedPackages = $packages->getCollection()->map(function ($package) use ($country, $rate, $bestSellerPackageId, $pricingService, $studentProfile) {
+            $teacherId = $profile ? $profile->id : null;
 
-                $originalPriceUsd = $pricingService->getPackagePriceUsd($package, $studentProfile);
-                $discountPercent = (float) ($package->discount ?? 0);
+            $studentsCount = $teacherId
+                ? \Illuminate\Support\Facades\DB::table('call_sessions')
+                    ->where('teacher_id', $teacherId)
+                    ->whereNotNull('student_id')
+                    ->distinct('student_id')
+                    ->count('student_id')
+                : 0;
 
-                $finalPriceUsd = ($discountPercent > 0 && $discountPercent < 100)
-                    ? $originalPriceUsd * (1 - ($discountPercent / 100))
-                    : $originalPriceUsd;
+            $callsCount = $teacherId
+                ? \Illuminate\Support\Facades\DB::table('call_sessions')
+                    ->where('teacher_id', $teacherId)
+                    ->count()
+                : 0;
 
-                $localOriginalPrice = $originalPriceUsd * $rate;
-                $localFinalPrice = $finalPriceUsd * $rate;
+            $slotsCount = ($teacherId && \Illuminate\Support\Facades\Schema::hasTable('slots'))
+                ? \Illuminate\Support\Facades\DB::table('slots')->where('teacher_id', $teacherId)->count()
+                : 0;
 
-                return [
-                    'id'                     => $package->id,
-                    'name'                   => $package->name,
-                    'description'            => $package->description,
+            $avgRating = $profile ? round((float) ($profile->ratings_avg_rating ?? $profile->average_rating ?? 0), 1) : 0;
+            $reviewsCount = $profile ? (int) ($profile->ratings_count ?? $profile->ratings->count()) : 0;
 
-                    'base_minutes'           => $package->base_minutes,
-                    'bonus_minutes'          => $package->bonus_minutes,
-                    'validity_days'          => $package->validity_days,
+            if ($profile) {
+                $profile->average_rating = $avgRating;
+            }
 
-                    'is_best_seller'         => $package->id === $bestSellerPackageId,
+            return [
+                'id'               => $profile ? $profile->id : $app->id,
+                'application_id'   => $app->id,
+                'name'             => $app->full_name ?? ($user ? $user->name : null),
+                'photo_url'        => $photoUrl,
+                'is_online'        => $profile ? (bool) $profile->is_online : false,
+                'rating'           => $avgRating,
+                'reviews_count'    => $reviewsCount,
+                'students_count'   => $studentsCount,
+                'calls_count'      => $callsCount,
+                'slots_count'      => $slotsCount,
+                'sessions_count'   => 0,
+                'qualification'    => $app->qualification,
+                'country'          => $app->origin_country,
+                'languages'        => $app->languages ?? [],
+                'experience_years' => (int) $app->experience_years,
+                'specialties'      => $app->tracks ? $app->tracks->map(fn ($track) => [
+                    'id'   => $track->id,
+                    'name' => $track->name,
+                ])->values() : [],
+                'about'            => $app->ijazas_text,
+                'reviews_details'  => ($profile && $profile->ratings)
+                    ? $profile->ratings->sortByDesc('id')->map(fn ($rating) => [
+                        'id'           => $rating->id,
+                        'student_name' => optional($rating->user)->name,
+                        'rating'       => (int) $rating->rating,
+                        'comment'      => $rating->comment,
+                        'date'         => optional($rating->created_at)->format('Y-m-d'),
+                    ])->values()
+                    : [],
+                'user_data'        => $user,
+                'profile_data'     => $profile,
+            ];
+        })->values();
 
-                    'discount_percent'       => $discountPercent,
-                    'has_discount'           => $discountPercent > 0,
-
-                    'local_original_price'   => (int) round($localOriginalPrice),
-                    'local_final_price'      => (int) round($localFinalPrice),
-
-                    'original_price_usd'     => round($originalPriceUsd, 2),
-                    'final_price_usd'        => round($finalPriceUsd, 2),
-
-                    'currency_code'          => $country->currency_code,
-                    'currency_symbol'        => $country->currency_symbol,
-
-                    'display_original_price' => sprintf('%s %s', $country->currency_symbol, number_format($localOriginalPrice, 0)),
-                    'display_final_price'    => sprintf('%s %s', $country->currency_symbol, number_format($localFinalPrice, 0)),
-                ];
-            })->filter()->values();
-
-            return response()->json([
-                'status'  => true,
-                'message' => 'تم استرجاع الباقات بنجاح.',
-                'data'    => [
-                    'user_country' => [
-                        'name'        => $country->name,
-                        'currency'    => $country->currency_code,
-                        'rate_to_usd' => $rate,
-                    ],
-                    'packages'   => $transformedPackages,
-                    'pagination' => [
-                        'total'        => $packages->total(),
-                        'per_page'     => $packages->perPage(),
-                        'current_page' => $packages->currentPage(),
-                        'total_pages'  => $packages->lastPage(),
-                    ],
+        return response()->json([
+            'status'  => true,
+            'message' => 'تم استرجاع قائمة المعلمين بنجاح.',
+            'data'    => [
+                'teachers'   => $teachers,
+                'pagination' => [
+                    'total'        => $paginator->total(),
+                    'per_page'     => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'total_pages'  => $paginator->lastPage(),
                 ],
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::error('Get Packages Pagination Error', [
-                'user_id' => optional($request->user())->id,
-                'error'   => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'فشل في تحميل الباقات.'
-            ], 500);
-        }
+            ],
+        ], 200);
     }
 
     public function userPackages(Request $request): JsonResponse
