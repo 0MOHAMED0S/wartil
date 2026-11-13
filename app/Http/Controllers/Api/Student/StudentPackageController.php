@@ -13,7 +13,7 @@ use App\Services\PricingEngineService;
 
 class StudentPackageController extends Controller
 {
-    public function index(Request $request): JsonResponse
+public function index(Request $request): JsonResponse
     {
         try {
             $user = $request->user();
@@ -21,7 +21,7 @@ class StudentPackageController extends Controller
 
             if (!$studentProfile || !$studentProfile->country) {
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'ملف الطالب أو بيانات الدولة غير موجودة.'
                 ], 404);
             }
@@ -38,7 +38,7 @@ class StudentPackageController extends Controller
             $perPage = $request->query('per_page', 10);
             $pricingService = app(PricingEngineService::class);
             $region = $pricingService->getStudentRegion($studentProfile);
-            
+
             $packages = Package::where('status', 'active')
                 ->where('show_in_' . $region, true)
                 ->paginate($perPage);
@@ -56,15 +56,15 @@ class StudentPackageController extends Controller
                 $localFinalPrice = $finalPriceUsd * $rate;
 
                 return [
-                    'id'            => $package->id,
-                    'name'          => $package->name,
-                    'description'   => $package->description,
+                    'id'                   => $package->id,
+                    'name'                 => $package->name,
+                    'description'          => $package->description,
 
-                    'base_minutes'  => $package->base_minutes,
-                    'bonus_minutes' => $package->bonus_minutes,
-                    'validity_days' => $package->validity_days,
+                    'base_minutes'         => $package->base_minutes,
+                    'bonus_minutes'        => $package->bonus_minutes,
+                    'validity_days'        => $package->validity_days,
 
-                    'is_best_seller' => $package->id === $bestSellerPackageId,
+                    'is_best_seller'       => $package->id === $bestSellerPackageId,
 
                     'discount_percent'     => $discountPercent,
                     'has_discount'         => $discountPercent > 0,
@@ -75,8 +75,8 @@ class StudentPackageController extends Controller
                     'original_price_usd'   => round($originalPriceUsd, 2),
                     'final_price_usd'      => round($finalPriceUsd, 2),
 
-                    'currency_code'   => $country->currency_code,
-                    'currency_symbol' => $country->currency_symbol,
+                    'currency_code'        => $country->currency_code,
+                    'currency_symbol'      => $country->currency_symbol,
 
                     'display_original_price' => sprintf('%s %s', $country->currency_symbol, number_format($localOriginalPrice, 0)),
                     'display_final_price'    => sprintf('%s %s', $country->currency_symbol, number_format($localFinalPrice, 0)),

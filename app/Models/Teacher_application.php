@@ -37,5 +37,37 @@ class Teacher_application extends Model
     {
         return $this->hasOne(Teacher::class, 'teacher_application_id');
     }
+    // 1. Hide 'full_name' and append 'name' so JSON returns "name" instead of "full_name"
+    protected $hidden = ['full_name'];
+    protected $appends = ['name'];
+
+    // 2. Map 'name' to 'full_name'
+    public function getNameAttribute()
+    {
+        return $this->attributes['full_name'] ?? null;
+    }
+
+    // 3. Return full URL for profile_photo_path (and cv_pdf_path if needed)
+    public function getProfilePhotoPathAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+        return asset('storage/' . ltrim($value, '/'));
+    }
+
+    public function getCvPdfPathAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+        return asset('storage/' . ltrim($value, '/'));
+    }
     
 }
