@@ -35,9 +35,11 @@ public function destroy(Request $request)
 
         DB::beginTransaction();
         try {
-            // ---------- 1. Student cleanup (Direct lookup by user_id) ----------
-            $student = \App\Models\Student::withTrashed()->where('user_id', $user->id)->first();
+            $deletedEmail = 'deleted_' . $user->id . '_' . time() . '_' . $user->email;
+            $originalEmail = $user->email;
 
+            // ---------- 1. Student cleanup ----------
+            $student = \App\Models\Student::withTrashed()->where('user_id', $user->id)->first();
             if ($student) {
                 // Nullify foreign keys that reference the student
                 DB::table('call_sessions')
@@ -49,9 +51,9 @@ public function destroy(Request $request)
                     ->where('student_id', $student->id)
                     ->delete();
 
-                // Set phone to null and soft-delete the student row directly
+                // Make student phone NULL and soft-delete
                 DB::table('students')
-                    ->where('user_id', $user->id)
+                    ->where('id', $student->id)
                     ->update([
                         'phone'      => null,
                         'deleted_at' => now(),
@@ -63,54 +65,62 @@ public function destroy(Request $request)
             DB::table('ratings')->where('user_id', $user->id)->delete();
             DB::table('slot_bookings')->where('user_id', $user->id)->delete();
 
-            // ---------- 2. Teacher cleanup ----------
-            $teacher = $user->teacherProfile;
+            // ---------- 2. Teacher & Teacher_application cleanup ----------
+            $teacher = \App\Models\Teacher::withTrashed()->where('user_id', $user->id)->first();
+            $applicationId = null;
+
             if ($teacher) {
+                $applicationId = $teacher->teacher_application_id;
+
+                // Detach many-to-many relations
                 DB::table('favorites')
                     ->where('teacher_id', $teacher->id)
                     ->delete();
                 $teacher->tracks()->detach();
 
+                // Nullify foreign keys that reference the teacher
                 $teacher->callSessions()->update(['teacher_id' => null]);
                 $teacher->ratings()->update(['teacher_id' => null]);
 
-                $teacher->delete();
-
-                // If teacher has an application relation, clear its phone & delete
-                if ($teacher->application) {
-                    DB::table('teacher_applications')
-                        ->where('id', $teacher->application->id)
-                        ->update([
-                            'phone'      => null,
-                            'deleted_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                // If teachers table also has a phone column, set it to null
+                if (\Illuminate\Support\Facades\Schema::hasColumn('teachers', 'phone')) {
+                    DB::table('teachers')
+                        ->where('id', $teacher->id)
+                        ->update(['phone' => null]);
                 }
+
+                // Soft-delete the teacher profile
+                $teacher->delete();
             }
 
-            // Also clear phone on teacher_applications directly by user_id or email if the column exists
-            if (\Illuminate\Support\Facades\Schema::hasColumn('teacher_applications', 'user_id')) {
-                DB::table('teacher_applications')
-                    ->where('user_id', $user->id)
-                    ->update(['phone' => null]);
+            // Find the Teacher_application by teacher_application_id OR by the user's email
+            $applicationQuery = DB::table('teacher_applications');
+            if ($applicationId) {
+                $applicationQuery->where('id', $applicationId)->orWhere('email', $originalEmail);
+            } else {
+                $applicationQuery->where('email', $originalEmail);
             }
-            if (\Illuminate\Support\Facades\Schema::hasColumn('teacher_applications', 'email')) {
-                DB::table('teacher_applications')
-                    ->where('email', $user->email)
-                    ->update(['phone' => null]);
-            }
+
+            // Update email to deleted and phone to null in teacher_applications
+            $applicationQuery->update([
+                'email'      => $deletedEmail,
+                'phone'      => null,
+                'updated_at' => now(),
+            ]);
 
             // ---------- 3. User email update & soft-delete ----------
-            $user->forceFill([
-                'email' => 'deleted_' . $user->id . '_' . time() . '_' . $user->email,
-            ])->save();
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update([
+                    'email'      => $deletedEmail,
+                    'deleted_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
             // Revoke active API tokens (if using Sanctum/Passport)
             if (method_exists($user, 'tokens')) {
                 $user->tokens()->delete();
             }
-
-            $user->delete();
 
             DB::commit();
 
