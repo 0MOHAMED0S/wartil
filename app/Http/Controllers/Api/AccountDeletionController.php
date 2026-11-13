@@ -22,7 +22,7 @@ class AccountDeletionController extends Controller
     /**
      * Delete the authenticated user (student or teacher).
      */
-    public function destroy(Request $request)
+public function destroy(Request $request)
     {
         $user = $request->user();
 
@@ -84,7 +84,17 @@ class AccountDeletionController extends Controller
                 }
             }
 
-            // ---------- User soft-delete ----------
+            // ---------- User anonymization & soft-delete ----------
+            $user->forceFill([
+                'email' => 'deleted_' . $user->id . '_' . time() . '_' . $user->email,
+                'phone' => null,
+            ])->save();
+
+            // Revoke active API tokens (if using Sanctum/Passport)
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete();
+            }
+
             $user->delete();
 
             DB::commit();
