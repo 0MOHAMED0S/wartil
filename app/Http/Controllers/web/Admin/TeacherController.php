@@ -134,7 +134,7 @@ public function index(Request $request)
                 ));
 
                 // 2. إرسال البث اللحظي (في حال كان يمتلك حساب طالب مثلاً وتمت ترقيته ومسجل دخوله حالياً)
-                broadcast(new \App\Events\TeacherAccountApproved($user->id, $notificationData));
+                broadcast(new \App\Events\TeacherAccountApproved($teacher->id, $notificationData));
                 // ==========================================
 
             } catch (\Exception $e) {

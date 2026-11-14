@@ -23,10 +23,8 @@ class AppServiceProvider extends ServiceProvider
         // استخدام Bootstrap لترقيم الصفحات لمنع تكبير أيقونات SVG
         Paginator::useBootstrapFive();
 
-        // أضف auth:sanctum هنا
-        Broadcast::routes(['middleware' => ['auth:sanctum']]);
-
-    require base_path('routes/channels.php');
+        // Broadcast routes are registered in routes/api.php
+        // channels.php is loaded by bootstrap/app.php
         // 1️⃣ تسجيل أي نجاح في الإشعارات
         \Illuminate\Support\Facades\Event::listen(function (\Illuminate\Notifications\Events\NotificationSent $event) {
             \Illuminate\Support\Facades\Log::info('✅ الإشعار نجح!', [

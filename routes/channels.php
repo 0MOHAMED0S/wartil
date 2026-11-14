@@ -13,6 +13,10 @@ Broadcast::channel('teacher.{id}', function ($user, $id) {
     return false;
 });
 
+Broadcast::channel('student.{id}', function ($user, $id) {
+    return $user->role === 'student' && (int) $user->id === (int) $id;
+});
+
 Broadcast::channel('admin.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
