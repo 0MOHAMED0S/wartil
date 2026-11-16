@@ -8,6 +8,7 @@ use App\Models\Teacher;
 use App\Models\UserPackage;
 use App\Services\AgoraService;
 use App\Events\IncomingPrivateCall;
+use App\Events\CallStatusUpdated;
 use App\Models\RecitationSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,8 @@ class PrivateCallController extends Controller
     }
     public function startCall(Request $request)
     {
+        // existing code unchanged
+
         $request->validate([
             'teacher_id' => 'required|exists:teachers,id'
         ]);
@@ -289,6 +292,16 @@ class PrivateCallController extends Controller
             ]);
 
             DB::commit();
+
+        // بث الحدث للطالب بعد إنهاء المكالمة
+        event(new CallStatusUpdated(
+            $call->student_id,
+            [
+                'call_id' => $call->id,
+                'status'  => 'ended',
+                'duration_minutes' => $actualDeduction,
+            ]
+        ));
 
             $studentRemainingMinutes = $this->calculateTotalMinutes($call->student_id);
 
