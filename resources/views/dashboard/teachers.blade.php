@@ -255,20 +255,43 @@
                         </thead>
                         <tbody>
                             @forelse($teachers as $teacher)
-                                @php
-                                    $userName = optional(optional($teacher->profile)->user)->name ?? $teacher->full_name;
-                                    $userEmail = optional(optional($teacher->profile)->user)->email ?? $teacher->email;
-                                    $imagePath = $teacher->status == 'pending' ? $teacher->profile_photo_path : (optional($teacher->profile)->profile_photo_path ?? $teacher->profile_photo_path);
-                                    $langsRaw = $teacher->languages;
-                                    $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
-                                @endphp
-                                
-                                <tr style="background: #fff;">
-                                    {{-- 1. Teacher Info (Stacked) --}}
-                                    <td style="padding: 16px; text-align: right; border-bottom: none;">
-                                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                                            <img src="{{ $imagePath ? asset('storage/' . $imagePath) : asset('images/default-avatar.png') }}" 
-                                                 alt="Profile" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
+    @php
+        $userName = optional(optional($teacher->profile)->user)->name ?? $teacher->full_name;
+        $userEmail = optional(optional($teacher->profile)->user)->email ?? $teacher->email;
+        // Prefer profile photo if teacher is approved, otherwise use pending photo path
+        $imagePath = null;
+        if ($teacher->status == 'approved' && optional($teacher->profile)->profile_photo_path) {
+            $imagePath = $teacher->profile->profile_photo_path;
+        } elseif ($teacher->profile_photo_path) {
+            $imagePath = $teacher->profile_photo_path;
+        }
+        $langsRaw = $teacher->languages;
+        $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
+    @endphp
+    
+    <tr style="background: #fff;">
+        {{-- 1. Teacher Info (Stacked) --}}
+        <td style="padding: 16px; text-align: right; border-bottom: none;">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <img src="{{ $imagePath ? asset('storage/' . $imagePath) : asset('images/default-avatar.png') }}"
+                     alt="Profile" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
+                <div class="d-flex flex-column gap-1">
+                    <span style="font-weight: 700; color: #0f172a; font-size: 1rem;">
+                        {{ $userName }}
+                        @if($teacher->gender == 'male') <i class="fa-solid fa-mars text-primary ms-1" title="ذكر"></i> @elseif($teacher->gender == 'female') <i class="fa-solid fa-venus text-danger ms-1" title="أنثى"></i> @endif
+                    </span>
+                    <span style="color: #64748b; font-size: 0.85rem;"><i class="fa-solid fa-envelope me-1"></i>{{ $userEmail }}</span>
+                    <div class="d-flex gap-3 align-items-center mt-1">
+                        <span style="color: #0d9488; font-size: 0.85rem; font-weight: 600;"><i class="fa-solid fa-phone me-1"></i><span dir="ltr">{{ $teacher->phone }}</span></span>
+                        @if($teacher->cv_pdf_path)
+                            <a href="{{ asset('storage/' . $teacher->cv_pdf_path) }}" target="_blank" class="badge bg-soft-danger text-danger text-decoration-none" title="عرض السيرة الذاتية" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-file-pdf me-1"></i> السيرة الذاتية
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </td>
                                             <div class="d-flex flex-column gap-1">
                                                 <span style="font-weight: 700; color: #0f172a; font-size: 1rem;">
                                                     {{ $userName }}
