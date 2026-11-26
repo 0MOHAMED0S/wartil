@@ -134,11 +134,17 @@ class TeacherController extends Controller
         }
 
         if ($disk->exists($normalized)) {
-            $disk->copy($normalized, $targetPath);
-            return $targetPath;
+            try {
+                $disk->makeDirectory('teachers/photos');
+                if ($disk->copy($normalized, $targetPath)) {
+                    return $targetPath;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Failed copying teacher photo to teachers/photos: ' . $e->getMessage());
+            }
         }
 
-        return null;
+        return $normalized;
     }
 
 public function index(Request $request)
@@ -209,7 +215,7 @@ public function index(Request $request)
                     ->store('teachers/photos', 'public');
             } else {
                 // نسخ صورة الطلب من teacher-applications/photos إلى teachers/photos مع الإبقاء على الأصلية
-                $photoPath = $this->resolveOrCopyApplicationPhoto($rawApplicationPhoto);
+                $photoPath = $this->resolveOrCopyApplicationPhoto($rawApplicationPhoto) ?? '';
             }
 
             // 2. إنشاء المستخدم مع تأكيد البريد الإلكتروني فوراً
