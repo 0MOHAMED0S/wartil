@@ -10,9 +10,137 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class TeacherController extends Controller
 {
+    /**
+     * Normalize a raw storage path stored in the database for the public disk.
+     */
+    private function normalizeStoragePath(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            $urlPath = parse_url($path, PHP_URL_PATH) ?: '';
+            if (str_contains($urlPath, '/storage/')) {
+                $afterStorage = substr($urlPath, strpos($urlPath, '/storage/') + strlen('/storage/'));
+                return ltrim($afterStorage, '/');
+            }
+
+            return $path;
+        }
+
+        $path = ltrim(str_replace('\\', '/', $path), '/');
+        $path = preg_replace('#^(?:public/)?storage/#', '', $path);
+
+        return $path !== '' ? $path : null;
+    }
+
+    /**
+     * Convert a stored relative path or URL into a browser-accessible URL.
+     */
+    private function toPublicUrl(?string $path): ?string
+    {
+        $normalized = $this->normalizeStoragePath($path);
+        if (!$normalized) {
+            return null;
+        }
+
+        if (filter_var($normalized, FILTER_VALIDATE_URL)) {
+            return $normalized;
+        }
+
+        return asset('storage/' . $normalized);
+    }
+
+    /**
+     * Read a model attribute without triggering mutators/accessors when raw value exists.
+     */
+    private function getRawModelAttribute($model, string $attribute): ?string
+    {
+        if (!$model) {
+            return null;
+        }
+
+        $attributes = $model->getAttributes();
+        if (array_key_exists($attribute, $attributes)) {
+            return $attributes[$attribute];
+        }
+
+        return $model->getRawOriginal($attribute);
+    }
+
+    /**
+     * Resolve the best photo URL for a teacher application in the admin dashboard.
+     */
+    private function resolveDashboardPhotoUrl(Teacher_application $application): ?string
+    {
+        $profilePath = $this->normalizeStoragePath(
+            $this->getRawModelAttribute($application->profile, 'profile_photo_path')
+        );
+        $applicationPath = $this->normalizeStoragePath(
+            $this->getRawModelAttribute($application, 'profile_photo_path')
+        );
+
+        $candidates = $application->status === 'pending'
+            ? [$applicationPath, $profilePath]
+            : [$profilePath, $applicationPath];
+
+        $disk = Storage::disk('public');
+        $fallback = null;
+
+        foreach ($candidates as $candidate) {
+            if (!$candidate) {
+                continue;
+            }
+
+            $fallback ??= $candidate;
+
+            if (filter_var($candidate, FILTER_VALIDATE_URL) || $disk->exists($candidate)) {
+                return $this->toPublicUrl($candidate);
+            }
+        }
+
+        return $this->toPublicUrl($fallback);
+    }
+
+    /**
+     * Ensure an approved teacher profile has a photo inside teachers/photos when available.
+     */
+    private function resolveOrCopyApplicationPhoto(?string $rawApplicationPhoto): ?string
+    {
+        $normalized = $this->normalizeStoragePath($rawApplicationPhoto);
+        if (!$normalized) {
+            return null;
+        }
+
+        if (filter_var($normalized, FILTER_VALIDATE_URL)) {
+            return $normalized;
+        }
+
+        $disk = Storage::disk('public');
+        $targetPath = 'teachers/photos/' . basename($normalized);
+
+        if ($normalized === $targetPath || $disk->exists($targetPath)) {
+            return $targetPath;
+        }
+
+        if ($disk->exists($normalized)) {
+            $disk->copy($normalized, $targetPath);
+            return $targetPath;
+        }
+
+        return null;
+    }
+
 public function index(Request $request)
     {
         // بناء الاستعلام الأساسي
@@ -45,6 +173,14 @@ public function index(Request $request)
 
         // 4. جلب البيانات مع الترقيم والاحتفاظ بالبحث في الرابط (withQueryString)
         $teachers = $query->paginate(10)->withQueryString();
+        $teachers->getCollection()->transform(function ($teacher) {
+            $teacher->display_photo_url = $this->resolveDashboardPhotoUrl($teacher);
+            $teacher->display_cv_url = $this->toPublicUrl(
+                $this->getRawModelAttribute($teacher, 'cv_pdf_path')
+            );
+
+            return $teacher;
+        });
         $categories = \App\Models\TeacherCategory::all();
 
         return view('dashboard.teachers', compact('teachers', 'pendingCount', 'approvedCount', 'rejectedCount', 'categories'));
@@ -60,28 +196,20 @@ public function index(Request $request)
 
         \Illuminate\Support\Facades\DB::beginTransaction(); // استخدام الترانزاكشن لضمان سلامة البيانات
 
+        $rawApplicationPhoto = $this->normalizeStoragePath(
+            $this->getRawModelAttribute($application, 'profile_photo_path')
+        );
+        $photoPath = null;
+
         try {
             // 1. معالجة الصورة الشخصية (التحقق من وجودها)
-            $photoPath = null;
             if ($request->hasFile('profile_photo')) {
                 // حفظ الصورة التي رفعها الأدمن داخل مجلد المعلمين
                 $photoPath = $request->file('profile_photo')
                     ->store('teachers/photos', 'public');
             } else {
-                // لم يرفع صورة جديدة – نريد أن نضمن أن المسار يكون داخل "teachers/photos"
-                // إذا كانت الصورة موجودة في مسار طلب المعلم (teacher-applications/photos/...)
-                // نقوم بنقلها إلى المجلد الصحيح ونحدّث المسار.
-                if ($application->profile_photo_path &&
-                    \Illuminate\Support\Facades\Storage::disk('public')->exists($application->profile_photo_path)) {
-                    $filename = basename($application->profile_photo_path);
-                    $newPath = "teachers/photos/{$filename}";
-                    if ($application->profile_photo_path !== $newPath) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->move($application->profile_photo_path, $newPath);
-                    }
-                    $photoPath = $newPath;
-                } else {
-                    $photoPath = null;
-                }
+                // نسخ صورة الطلب من teacher-applications/photos إلى teachers/photos مع الإبقاء على الأصلية
+                $photoPath = $this->resolveOrCopyApplicationPhoto($rawApplicationPhoto);
             }
 
             // 2. إنشاء المستخدم مع تأكيد البريد الإلكتروني فوراً
@@ -147,8 +275,8 @@ public function index(Request $request)
             \Illuminate\Support\Facades\DB::rollBack(); // تراجع عن كل العمليات في حال حدوث أي خطأ
 
             // حذف الصورة المرفوعة إذا فشلت العملية
-            if ($photoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($photoPath) && $photoPath !== $application->profile_photo_path) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($photoPath);
+            if ($photoPath && Storage::disk('public')->exists($photoPath) && $photoPath !== $rawApplicationPhoto) {
+                Storage::disk('public')->delete($photoPath);
             }
 
             \Illuminate\Support\Facades\Log::error('خطأ في اعتماد المعلم: ' . $e->getMessage());
@@ -212,6 +340,13 @@ public function index(Request $request)
         if ($request->hasFile('profile_photo')) {
             $path = $request->file('profile_photo')->store('teachers/photos', 'public');
             $profile->profile_photo_path = $path;
+        } elseif (empty($profile->profile_photo_path)) {
+            $copiedPhoto = $this->resolveOrCopyApplicationPhoto(
+                $this->getRawModelAttribute($application, 'profile_photo_path')
+            );
+            if ($copiedPhoto) {
+                $profile->profile_photo_path = $copiedPhoto;
+            }
         }
         $profile->save();
 

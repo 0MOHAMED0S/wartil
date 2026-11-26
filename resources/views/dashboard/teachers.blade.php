@@ -258,7 +258,42 @@
                                 @php
                                     $userName = optional(optional($teacher->profile)->user)->name ?? $teacher->full_name;
                                     $userEmail = optional(optional($teacher->profile)->user)->email ?? $teacher->email;
-                                    $imagePath = $teacher->status == 'pending' ? $teacher->profile_photo_path : (optional($teacher->profile)->profile_photo_path ?? $teacher->profile_photo_path);
+
+                                    $imageUrl = $teacher->display_photo_url ?? null;
+                                    if (!$imageUrl) {
+                                        $profileModel = $teacher->profile;
+                                        $rawProfilePhoto = $profileModel
+                                            ? ($profileModel->getAttributes()['profile_photo_path'] ?? $profileModel->getRawOriginal('profile_photo_path') ?? $profileModel->profile_photo_path)
+                                            : null;
+                                        $rawAppPhoto = $teacher->getAttributes()['profile_photo_path'] ?? $teacher->getRawOriginal('profile_photo_path') ?? $teacher->profile_photo_path;
+                                        $rawPhoto = $teacher->status == 'pending'
+                                            ? ($rawAppPhoto ?: $rawProfilePhoto)
+                                            : ($rawProfilePhoto ?: $rawAppPhoto);
+
+                                        if ($rawPhoto) {
+                                            if (filter_var($rawPhoto, FILTER_VALIDATE_URL)) {
+                                                $imageUrl = $rawPhoto;
+                                            } else {
+                                                $cleanPhoto = preg_replace('#^(?:public/)?storage/#', '', ltrim(str_replace('\\', '/', $rawPhoto), '/'));
+                                                $imageUrl = asset('storage/' . $cleanPhoto);
+                                            }
+                                        }
+                                    }
+
+                                    $cvUrl = $teacher->display_cv_url ?? null;
+                                    if (!$cvUrl) {
+                                        $rawCv = $teacher->getAttributes()['cv_pdf_path'] ?? $teacher->getRawOriginal('cv_pdf_path') ?? $teacher->cv_pdf_path;
+                                        if ($rawCv) {
+                                            if (filter_var($rawCv, FILTER_VALIDATE_URL)) {
+                                                $cvUrl = $rawCv;
+                                            } else {
+                                                $cleanCv = preg_replace('#^(?:public/)?storage/#', '', ltrim(str_replace('\\', '/', $rawCv), '/'));
+                                                $cvUrl = asset('storage/' . $cleanCv);
+                                            }
+                                        }
+                                    }
+
+                                    $avatarInitial = mb_substr($userName ?: 'م', 0, 1, 'utf-8');
                                     $langsRaw = $teacher->languages;
                                     $langs = is_array($langsRaw) || is_object($langsRaw) ? (array) $langsRaw : (json_decode($langsRaw, true) ?? []);
                                 @endphp
@@ -267,8 +302,15 @@
                                     {{-- 1. Teacher Info (Stacked) --}}
                                     <td style="padding: 16px; text-align: right; border-bottom: none;">
                                         <div class="d-flex align-items-center gap-3 flex-wrap">
-                                            <img src="{{ $imagePath ? asset('storage/' . $imagePath) : asset('images/default-avatar.png') }}" 
-                                                 alt="Profile" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
+                                            @if($imageUrl)
+                                                <img src="{{ $imageUrl }}"
+                                                     alt="{{ $userName }}"
+                                                     style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; flex-shrink: 0;"
+                                                     onerror="this.onerror=null; this.style.display='none'; if (this.nextElementSibling) { this.nextElementSibling.style.display='flex'; }">
+                                            @endif
+                                            <div style="display: {{ $imageUrl ? 'none' : 'flex' }}; width: 55px; height: 55px; border-radius: 50%; background: #e6f4f1; color: #0d9488; font-weight: 700; font-size: 1.2rem; align-items: center; justify-content: center; border: 2px solid #e2e8f0; flex-shrink: 0;">
+                                                {{ $avatarInitial }}
+                                            </div>
                                             <div class="d-flex flex-column gap-1">
                                                 <span style="font-weight: 700; color: #0f172a; font-size: 1rem;">
                                                     {{ $userName }}
@@ -277,8 +319,8 @@
                                                 <span style="color: #64748b; font-size: 0.85rem;"><i class="fa-solid fa-envelope me-1"></i>{{ $userEmail }}</span>
                                                 <div class="d-flex gap-3 align-items-center mt-1">
                                                     <span style="color: #0d9488; font-size: 0.85rem; font-weight: 600;"><i class="fa-solid fa-phone me-1"></i><span dir="ltr">{{ $teacher->phone }}</span></span>
-                                                    @if($teacher->cv_pdf_path)
-                                                        <a href="{{ asset('storage/' . $teacher->cv_pdf_path) }}" target="_blank" class="badge bg-soft-danger text-danger text-decoration-none" title="عرض السيرة الذاتية" style="font-size: 0.75rem;">
+                                                    @if($cvUrl)
+                                                        <a href="{{ $cvUrl }}" target="_blank" class="badge bg-soft-danger text-danger text-decoration-none" title="عرض السيرة الذاتية" style="font-size: 0.75rem;">
                                                             <i class="fa-solid fa-file-pdf me-1"></i> السيرة الذاتية
                                                         </a>
                                                     @endif
